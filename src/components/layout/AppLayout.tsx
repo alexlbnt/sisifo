@@ -3,6 +3,8 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { Settings } from 'lucide-react';
 import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { UpdateToast } from '@/features/pwa/UpdateToast';
+import { FirstLinkDialog } from '@/features/sync/FirstLinkDialog';
+import { SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
 import { MOBILE_NAV, NAV_GROUPS, SETTINGS_ITEM, type NavItem } from './nav';
@@ -46,6 +48,7 @@ function Sidebar() {
         ))}
       </nav>
       <div className="flex flex-col gap-3 border-t border-line pt-4">
+        <SyncStatusLine />
         <SidebarLink item={SETTINGS_ITEM} />
         <ThemeSelector iconOnly className="w-full" />
       </div>
@@ -60,6 +63,7 @@ function MobileHeader() {
         <Logo />
       </Link>
       <div className="flex items-center">
+        <SyncStatusIcon />
         <ThemeCycleButton />
         <Link
           to="/settings"
@@ -119,6 +123,7 @@ export function AppLayout() {
       <BottomNav />
       <InstallBanner />
       <UpdateToast />
+      <FirstLinkDialog />
     </div>
   );
 }

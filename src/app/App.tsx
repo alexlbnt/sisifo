@@ -4,6 +4,9 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { TodayPage } from '@/features/dashboard/TodayPage';
 import { useFinanceStore } from '@/features/finance/store';
 import { useApplyTheme } from '@/features/settings/themeStore';
+import { useAuthStore } from '@/features/sync/authStore';
+import { LoginScreen } from '@/features/sync/LoginScreen';
+import { Logo } from '@/components/layout/Logo';
 
 /** Carrega a página sob demanda, para o gráfico e o resto não pesarem na tela inicial. */
 function page<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
@@ -18,14 +21,31 @@ const HabitsPage = page(() => import('@/features/personal/habits/HabitsPage'), '
 const TrainingPage = page(() => import('@/features/personal/training/TrainingPage'), 'TrainingPage');
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
 
+function Splash() {
+  return (
+    <div className="grid min-h-dvh place-items-center bg-bg" aria-label="Carregando">
+      <Logo />
+    </div>
+  );
+}
+
 export function App() {
   useApplyTheme();
+  const phase = useAuthStore((s) => s.phase);
+  const check = useAuthStore((s) => s.check);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
 
   // Gera os lançamentos recorrentes que venceram desde a última visita.
   const syncRecurring = useFinanceStore((s) => s.syncRecurring);
   useEffect(() => {
     syncRecurring();
   }, [syncRecurring]);
+
+  if (phase === 'checking') return <Splash />;
+  if (phase === 'locked') return <LoginScreen />;
 
   return (
     <BrowserRouter>

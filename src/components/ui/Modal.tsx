@@ -12,18 +12,31 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   size?: 'md' | 'lg';
+  /** false: escolha obrigatória (sem X, Esc ou clique fora para fechar). */
+  dismissible?: boolean;
 }
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ open, onClose, title, description, children, footer, size = 'md' }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = 'md',
+  dismissible = true,
+}: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const dismissibleRef = useRef(dismissible);
 
   useEffect(() => {
     onCloseRef.current = onClose;
+    dismissibleRef.current = dismissible;
   });
 
   useEffect(() => {
@@ -34,7 +47,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     (firstField ?? panel?.querySelector<HTMLElement>(FOCUSABLE))?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape' && dismissibleRef.current) onCloseRef.current();
       if (e.key !== 'Tab' || !panel) return;
       const focusables = panel.querySelectorAll<HTMLElement>(FOCUSABLE);
       const first = focusables[0];
@@ -62,7 +75,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-black/45" onClick={dismissible ? onClose : undefined} aria-hidden />
       <div
         ref={panelRef}
         role="dialog"
@@ -80,7 +93,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
             </h2>
             {description && <p className="mt-0.5 text-sm text-ink-3">{description}</p>}
           </div>
-          <IconButton icon={X} label="Fechar" size="sm" onClick={onClose} />
+          {dismissible && <IconButton icon={X} label="Fechar" size="sm" onClick={onClose} />}
         </header>
         <div className={cn('overflow-y-auto overscroll-contain px-5 pb-5', !footer && 'pb-[calc(1.25rem+env(safe-area-inset-bottom))]')}>
           {children}

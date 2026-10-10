@@ -3,6 +3,8 @@ import { CircleCheck, Download, Eraser, RotateCcw, Upload } from 'lucide-react';
 import { Button, Card, ConfirmDialog, PageHeader } from '@/components/ui';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { InstallCard } from '@/features/pwa/InstallCard';
+import { useAuthStore } from '@/features/sync/authStore';
+import { SyncCard } from '@/features/sync/SyncCard';
 import { clearAllData, downloadBackup, importBackup, restoreSampleData } from './backup';
 
 type Notice = { tone: 'good' | 'danger'; text: string } | null;
@@ -11,6 +13,9 @@ export function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [confirm, setConfirm] = useState<'restore' | 'clear' | null>(null);
+  // Com sincronização ligada, apagar/restaurar/importar vale para todos os aparelhos.
+  const synced = useAuthStore((s) => s.phase === 'ready');
+  const scope = synced ? 'em todos os seus aparelhos' : 'deste navegador';
 
   const onImport = async (file: File | undefined) => {
     if (!file) return;
@@ -28,6 +33,8 @@ export function SettingsPage() {
       <PageHeader title="Configurações" subtitle="Aparência e cuidados com os seus dados" />
 
       <div className="flex max-w-2xl flex-col gap-4">
+        <SyncCard />
+
         <InstallCard />
 
         <Card title="Aparência">
@@ -36,7 +43,11 @@ export function SettingsPage() {
 
         <Card
           title="Backup"
-          description="Os dados ficam só neste navegador. Limpar o cache apaga tudo, então exporte de vez em quando."
+          description={
+            synced
+              ? 'Uma cópia em arquivo, além da que está no servidor. Importar substitui os dados em todos os aparelhos.'
+              : 'Os dados ficam só neste navegador. Limpar o cache apaga tudo, então exporte de vez em quando.'
+          }
         >
           <div className="flex flex-wrap gap-2">
             <Button
@@ -87,7 +98,7 @@ export function SettingsPage() {
       <ConfirmDialog
         open={confirm === 'restore'}
         title="Restaurar dados de exemplo?"
-        message="Tudo o que você cadastrou será substituído pelos dados de demonstração. Exporte um backup antes se quiser guardar."
+        message={`Tudo o que você cadastrou será substituído pelos dados de demonstração ${scope}. Exporte um backup antes se quiser guardar.`}
         confirmLabel="Restaurar exemplo"
         onConfirm={() => {
           restoreSampleData();
@@ -98,7 +109,7 @@ export function SettingsPage() {
       <ConfirmDialog
         open={confirm === 'clear'}
         title="Apagar todos os dados?"
-        message="Lançamentos, metas, tarefas, hábitos e treinos serão apagados deste navegador. Não dá para desfazer."
+        message={`Lançamentos, metas, tarefas, hábitos e treinos serão apagados ${scope}. Não dá para desfazer.`}
         confirmLabel="Apagar tudo"
         onConfirm={() => {
           clearAllData();
