@@ -4,11 +4,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { apiDevServer } from './vite.api-dev';
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    apiDevServer(),
     VitePWA({
       // O usuário decide quando atualizar (aviso "Nova versão disponível").
       registerType: 'prompt',
@@ -58,6 +60,8 @@ export default defineConfig({
         // App shell completo em cache: abre sem internet (os dados já são locais).
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
+        // A API nunca passa pelo cache: dados pessoais e sessão vão sempre à rede.
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
       },
     }),

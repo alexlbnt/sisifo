@@ -1,0 +1,41 @@
+// Banco do Sísifo (Neon Postgres). O app é local-first: cada item salvo no
+// aparelho vira um registro aqui, e os aparelhos trocam alterações pelo `seq`.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../server/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Um item de uma coleção (transação, meta, hábito...) guardado como JSON.
+model SyncRecord {
+  collection String
+  id         String
+  /// null = item excluído (fica como "lápide" para os outros aparelhos saberem).
+  data       Json?
+  /// Momento da alteração no aparelho. A alteração mais recente vence.
+  updatedAt  DateTime @db.Timestamptz(3)
+  /// Contador global: muda a cada escrita. É o cursor da sincronização.
+  seq        BigInt   @default(autoincrement())
+
+  @@id([collection, id])
+  @@index([seq])
+  @@map("sync_records")
+}
+
+/// Tentativas de login, para limitar quem tenta adivinhar a senha.
+model LoginAttempt {
+  id        Int      @id @default(autoincrement())
+  ip        String
+  ok        Boolean
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([ip, createdAt])
+  @@map("login_attempts")
+}

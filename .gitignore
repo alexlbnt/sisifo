@@ -6,3 +6,6 @@ dist
 *.log
 .DS_Store
 coverage
+
+# Prisma Client gerado no build
+server/generated

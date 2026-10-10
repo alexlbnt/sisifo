@@ -17,5 +17,5 @@
     "noUncheckedIndexedAccess": true,
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "api", "server", "vite.config.ts", "vite.api-dev.ts", "prisma.config.ts"]
 }
