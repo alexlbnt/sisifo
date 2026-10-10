@@ -1,0 +1,47 @@
+import { lazy, useEffect, type ComponentType } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { TodayPage } from '@/features/dashboard/TodayPage';
+import { useFinanceStore } from '@/features/finance/store';
+import { useApplyTheme } from '@/features/settings/themeStore';
+
+/** Carrega a página sob demanda, para o gráfico e o resto não pesarem na tela inicial. */
+function page<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(() => loader().then((m) => ({ default: m[name] })));
+}
+
+const FinanceOverviewPage = page(() => import('@/features/finance/pages/FinanceOverviewPage'), 'FinanceOverviewPage');
+const TransactionsPage = page(() => import('@/features/finance/pages/TransactionsPage'), 'TransactionsPage');
+const TasksPage = page(() => import('@/features/personal/tasks/TasksPage'), 'TasksPage');
+const GoalsPage = page(() => import('@/features/personal/goals/GoalsPage'), 'GoalsPage');
+const HabitsPage = page(() => import('@/features/personal/habits/HabitsPage'), 'HabitsPage');
+const TrainingPage = page(() => import('@/features/personal/training/TrainingPage'), 'TrainingPage');
+const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
+
+export function App() {
+  useApplyTheme();
+
+  // Gera os lançamentos recorrentes que venceram desde a última visita.
+  const syncRecurring = useFinanceStore((s) => s.syncRecurring);
+  useEffect(() => {
+    syncRecurring();
+  }, [syncRecurring]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<TodayPage />} />
+          <Route path="finance" element={<FinanceOverviewPage />} />
+          <Route path="finance/transactions" element={<TransactionsPage />} />
+          <Route path="personal/tasks" element={<TasksPage />} />
+          <Route path="personal/goals" element={<GoalsPage />} />
+          <Route path="personal/habits" element={<HabitsPage />} />
+          <Route path="personal/training" element={<TrainingPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
