@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --bg: #eceee9;
+  --surface: #ffffff;
+  --surface-2: #f5f6f3;
+  --line: #d9ddd5;
+  --ink: #1a201e;
+  --ink-2: #4c5652;
+  --ink-3: #737d78;
+  --accent: #2e4a9e;
+  --accent-hover: #253d85;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2e7f6;
+  --income: #1b7349;
+  --expense: #b2382f;
+  --warn: #9a6200;
+  --warn-soft: #fbefd9;
+  --danger-soft: #f8e3e1;
+  --good-soft: #dff0e6;
+  --slope: #c9cec5;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0f1311;
+  --surface: #171c1a;
+  --surface-2: #1d2320;
+  --line: #2a322f;
+  --ink: #e6eae7;
+  --ink-2: #a9b3ae;
+  --ink-3: #7f8a85;
+  --accent: #93a6ef;
+  --accent-hover: #aebcf4;
+  --accent-ink: #0e1430;
+  --accent-soft: #222a45;
+  --income: #5cc493;
+  --expense: #f0827a;
+  --warn: #e3ac4a;
+  --warn-soft: #3a2e17;
+  --danger-soft: #3d201e;
+  --good-soft: #17322a;
+  --slope: #313a36;
+}
+
+@theme inline {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'IBM Plex Sans', ui-sans-serif, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-good-soft: var(--good-soft);
+  --color-slope: var(--slope);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+    /* Sem o "puxa e estica" da página inteira; listas internas rolam normalmente. */
+    overscroll-behavior-y: none;
+  }
+  /* No celular, campos com menos de 16px fazem o iPhone dar zoom ao focar. */
+  @media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+  /* Como app instalado, botões e navegação não devem selecionar texto ao segurar. */
+  @media (display-mode: standalone) {
+    button,
+    nav a {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-ink;
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+  }
+  .dark input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
