@@ -15,9 +15,15 @@ if (!password) {
   password = await rl.question('Senha do Sísifo: ');
   rl.close();
 }
-if (!password || password.length < 8) {
-  console.error('Use uma senha com pelo menos 8 caracteres.');
+if (!password || password.length < 4) {
+  console.error('Use uma senha com pelo menos 4 caracteres.');
   process.exit(1);
+}
+if (password.length < 10) {
+  console.warn(
+    '\nAtenção: senhas curtas (como um PIN) são fáceis de adivinhar por quem testa a partir de vários IPs.' +
+      '\nO limite de tentativas ajuda, mas uma frase longa protege muito mais.',
+  );
 }
 
 const salt = randomBytes(16);
