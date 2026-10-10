@@ -1,19 +1,9 @@
 import type { ISODate } from '@/lib/dates';
+import { CATEGORY_IDS } from '@/shared/schemas';
+
+export { CATEGORY_IDS };
 
 export type TransactionType = 'income' | 'expense';
-
-export const CATEGORY_IDS = [
-  'salary',
-  'freelance',
-  'housing',
-  'food',
-  'transport',
-  'leisure',
-  'health',
-  'education',
-  'investments',
-  'other',
-] as const;
 
 export type CategoryId = (typeof CATEGORY_IDS)[number];
 

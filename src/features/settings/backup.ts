@@ -1,105 +1,34 @@
 import { z } from 'zod';
 import { createFinanceMock } from '@/features/finance/mock';
 import { useFinanceStore } from '@/features/finance/store';
-import { CATEGORY_IDS, type FinanceState } from '@/features/finance/types';
+import type { FinanceState } from '@/features/finance/types';
 import { createPersonalMock } from '@/features/personal/mock';
 import { usePersonalStore } from '@/features/personal/store';
 import type { PersonalState } from '@/features/personal/types';
 import { todayISO } from '@/lib/dates';
-
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data no formato AAAA-MM-DD');
-const cents = z.number().int().nonnegative();
-const category = z.enum(CATEGORY_IDS);
-const txType = z.enum(['income', 'expense']);
-const area = z.enum(['routine', 'academic', 'training']);
-const weekdayList = z.array(z.number().int().min(0).max(6));
-const workoutKind = z.enum(['strength', 'muay_thai', 'cardio', 'mobility']);
+import {
+  budgetsSchema,
+  goalSchema,
+  habitSchema,
+  recurringRuleSchema,
+  taskSchema,
+  transactionSchema,
+  workoutPlanSchema,
+  workoutSessionSchema,
+} from '@/shared/schemas';
 
 const financeSchema = z.object({
-  transactions: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      amountCents: cents,
-      type: txType,
-      category,
-      date: isoDate,
-      recurringId: z.string().optional(),
-      createdAt: z.string(),
-    }),
-  ),
-  recurring: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      amountCents: cents,
-      type: txType,
-      category,
-      dayOfMonth: z.number().int().min(1).max(31),
-      startDate: isoDate,
-      active: z.boolean(),
-    }),
-  ),
-  budgets: z.partialRecord(category, cents),
+  transactions: z.array(transactionSchema),
+  recurring: z.array(recurringRuleSchema),
+  budgets: budgetsSchema,
 }) satisfies z.ZodType<FinanceState>;
 
 const personalSchema = z.object({
-  goals: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string().optional(),
-      horizon: z.enum(['short', 'medium', 'long']),
-      area,
-      deadline: isoDate.optional(),
-      subtasks: z.array(z.object({ id: z.string(), title: z.string(), done: z.boolean() })),
-      createdAt: z.string(),
-    }),
-  ),
-  tasks: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      area,
-      status: z.enum(['todo', 'doing', 'done']),
-      date: isoDate,
-      link: z.object({ goalId: z.string(), subtaskId: z.string() }).optional(),
-      completedAt: z.string().optional(),
-      createdAt: z.string(),
-    }),
-  ),
-  habits: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      area,
-      schedule: weekdayList,
-      completions: z.array(isoDate),
-      archived: z.boolean(),
-      createdAt: z.string(),
-    }),
-  ),
-  workoutPlans: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string(),
-      kind: workoutKind,
-      weekdays: weekdayList,
-      durationMin: z.number().int().positive(),
-    }),
-  ),
-  workoutSessions: z.array(
-    z.object({
-      id: z.string(),
-      date: isoDate,
-      kind: workoutKind,
-      label: z.string(),
-      durationMin: z.number().int().positive(),
-      intensity: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
-      notes: z.string().optional(),
-      planId: z.string().optional(),
-    }),
-  ),
+  goals: z.array(goalSchema),
+  tasks: z.array(taskSchema),
+  habits: z.array(habitSchema),
+  workoutPlans: z.array(workoutPlanSchema),
+  workoutSessions: z.array(workoutSessionSchema),
 }) satisfies z.ZodType<PersonalState>;
 
 const backupSchema = z.object({
