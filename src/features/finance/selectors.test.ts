@@ -88,3 +88,22 @@ describe('materializeRecurring', () => {
     expect(materializeRecurring([{ ...rule, active: false }], [], '2026-05-01')).toHaveLength(0);
   });
 });
+
+describe('materializeRecurring entre aparelhos', () => {
+  it('gera o mesmo id para a mesma regra e mês', () => {
+    const rule: RecurringRule = {
+      id: 'r9',
+      title: 'Internet',
+      amountCents: 9990,
+      type: 'expense',
+      category: 'housing',
+      dayOfMonth: 15,
+      startDate: '2026-09-01',
+      active: true,
+    };
+    const a = materializeRecurring([rule], [], '2026-10-20').map((t) => t.id);
+    const b = materializeRecurring([rule], [], '2026-10-20').map((t) => t.id);
+    expect(a).toEqual(['rec-r9-2026-09', 'rec-r9-2026-10']);
+    expect(b).toEqual(a);
+  });
+});

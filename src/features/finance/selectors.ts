@@ -1,5 +1,4 @@
 import { dateInMonth, lastMonths, monthKeyOf, type ISODate, type MonthKey } from '@/lib/dates';
-import { uid } from '@/lib/id';
 import { EXPENSE_CATEGORY_ORDER } from './categories';
 import type {
   Budgets,
@@ -142,7 +141,8 @@ export function materializeRecurring(
       const key = `${rule.id}|${month}`;
       if (date >= rule.startDate && date <= today && !existing.has(key)) {
         created.push({
-          id: uid(),
+          // Id determinístico: dois aparelhos gerando o mesmo mês criam o mesmo registro.
+          id: `rec-${rule.id}-${month}`,
           title: rule.title,
           amountCents: rule.amountCents,
           type: rule.type,
