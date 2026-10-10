@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ISODate } from '@/lib/dates';
 import { uid } from '@/lib/id';
+import { persistInitialState } from '@/lib/persistNow';
 import { createPersonalMock } from './mock';
 import type {
   Goal,
@@ -267,3 +268,5 @@ export const usePersonalStore = create<PersonalStore>()(
     },
   ),
 );
+
+persistInitialState(usePersonalStore, PERSONAL_STORAGE_KEY);

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { todayISO } from '@/lib/dates';
 import { uid } from '@/lib/id';
+import { persistInitialState } from '@/lib/persistNow';
 import { createFinanceMock } from './mock';
 import { materializeRecurring } from './selectors';
 import type {
@@ -104,3 +105,5 @@ export const useFinanceStore = create<FinanceStore>()(
     },
   ),
 );
+
+persistInitialState(useFinanceStore, FINANCE_STORAGE_KEY);
