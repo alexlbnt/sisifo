@@ -1,7 +1,9 @@
 import {
   CalendarCheck,
+  ClipboardCheck,
   Dumbbell,
   Flame,
+  Landmark,
   ListTodo,
   type LucideIcon,
   Mountain,
@@ -23,12 +25,18 @@ export interface NavGroup {
 }
 
 export const NAV_GROUPS: NavGroup[] = [
-  { items: [{ to: '/', label: 'Hoje', icon: Mountain, end: true }] },
+  {
+    items: [
+      { to: '/', label: 'Hoje', icon: Mountain, end: true },
+      { to: '/review', label: 'Revisão semanal', icon: ClipboardCheck },
+    ],
+  },
   {
     label: 'Finanças',
     items: [
       { to: '/finance', label: 'Visão geral', icon: Wallet, end: true },
       { to: '/finance/transactions', label: 'Lançamentos', icon: CalendarCheck },
+      { to: '/finance/accounts', label: 'Contas', icon: Landmark },
     ],
   },
   {

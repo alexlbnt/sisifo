@@ -1,9 +1,11 @@
 import { addDaysISO, todayISO, weekdayOf } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { seededRandom } from '@/lib/random';
+import { MOCK_SAVINGS_ID } from '@/features/finance/mock';
 import { defaultAreas } from './defaultAreas';
 import type {
   Goal,
+  GoalEntry,
   Habit,
   Intensity,
   PersonalState,
@@ -44,6 +46,20 @@ export function createPersonalMock(): PersonalState {
     createdAt: stamp(60),
   };
 
+  const booksGoal: Goal = {
+    id: uid(),
+    title: 'Ler 12 livros no ano',
+    horizon: 'long',
+    area: 'routine',
+    deadline: addDaysISO(today, 120),
+    subtasks: [],
+    kind: 'numeric',
+    target: 12,
+    unit: 'livros',
+    measure: 'sum',
+    createdAt: stamp(200),
+  };
+
   const goals: Goal[] = [
     tccGoal,
     {
@@ -67,29 +83,22 @@ export function createPersonalMock(): PersonalState {
       horizon: 'long',
       area: 'routine',
       deadline: addDaysISO(today, 420),
-      subtasks: subtasks([
-        ['Calcular custo mensal real', true],
-        ['Abrir conta com liquidez diária', true],
-        ['Atingir 1 mês de reserva', true],
-        ['Atingir 3 meses de reserva', false],
-        ['Atingir 6 meses de reserva', false],
-      ]),
+      subtasks: [],
+      kind: 'savings',
+      target: 30_000_00,
+      accountId: MOCK_SAVINGS_ID,
       createdAt: stamp(120),
     },
-    {
-      id: uid(),
-      title: 'Ler 12 livros no ano',
-      horizon: 'long',
-      area: 'routine',
-      subtasks: subtasks([
-        ['Livros 1 a 3', true],
-        ['Livros 4 a 6', true],
-        ['Livros 7 a 9', false],
-        ['Livros 10 a 12', false],
-      ]),
-      createdAt: stamp(200),
-    },
+    booksGoal,
   ];
+
+  // Um livro terminado a cada ~3 semanas.
+  const goalEntries: GoalEntry[] = [5, 26, 48, 70, 93, 115, 140].map((n) => ({
+    id: uid(),
+    goalId: booksGoal.id,
+    date: daysAgo(n),
+    value: 1,
+  }));
 
   const methodology = tccGoal.subtasks[2]!;
 
@@ -118,9 +127,9 @@ export function createPersonalMock(): PersonalState {
       goalId: tccGoal.id,
       subtaskId: methodology.id,
     }),
-    task('Lista de exercícios de Cálculo II', 'academic', today),
+    { ...task('Lista de exercícios de Cálculo II', 'academic', today), time: '19:00', priority: 'medium' },
     task('Arrumar a mesa e organizar a semana', 'routine', today, 'done'),
-    task('Pagar fatura do cartão', 'routine', today),
+    { ...task('Pagar fatura do cartão', 'routine', today), priority: 'high', repeat: { freq: 'monthly', day: 10 } },
     task('Treino de pernas + 20 min de esteira', 'training', today),
     task('Ler 30 páginas', 'routine', today),
     task('Enviar e-mail para o orientador', 'academic', daysAgo(1)),
@@ -156,8 +165,29 @@ export function createPersonalMock(): PersonalState {
     return { id: uid(), title, area, schedule, completions, archived: false, createdAt: stamp(90) };
   };
 
+  // Água: hábito de quantidade (8 copos por dia), com dias parciais.
+  const water = habit('Beber 2 L de água', 'routine', everyDay, 0.85, true);
+  const amounts: Record<string, number> = {};
+  for (let i = 30; i >= 0; i--) {
+    const d = daysAgo(i);
+    amounts[d] = water.completions.includes(d) ? 8 : rng.int(3, 7);
+  }
+  amounts[today] = 5;
+  water.kind = 'quantity';
+  water.target = 8;
+  water.unit = 'copos';
+  water.amounts = amounts;
+  water.completions = water.completions.filter((d) => d < daysAgo(30) || (amounts[d] ?? 0) >= 8);
+
+  const muayThaiExtra: Habit = {
+    ...habit('Treino extra de técnica', 'training', everyDay, 0.35, false),
+    frequency: 'weekly',
+    timesPerWeek: 2,
+  };
+
   const habits: Habit[] = [
-    habit('Beber 2 L de água', 'routine', everyDay, 0.85, true),
+    water,
+    muayThaiExtra,
     habit('Ler 20 minutos', 'routine', everyDay, 0.7, false),
     habit('Estudar 1 hora', 'academic', weekdays, 0.8, true),
     habit('Alongar ao acordar', 'training', everyDay, 0.6, false),
@@ -192,5 +222,5 @@ export function createPersonalMock(): PersonalState {
     }
   }
 
-  return { areas: defaultAreas(), goals, tasks, habits, workoutPlans, workoutSessions };
+  return { areas: defaultAreas(), goals, goalEntries, reviews: [], tasks, habits, workoutPlans, workoutSessions };
 }

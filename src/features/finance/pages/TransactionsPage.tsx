@@ -7,6 +7,7 @@ import {
   EmptyState,
   IconButton,
   Input,
+  Modal,
   PageHeader,
   SectionTabs,
   SegmentedControl,
@@ -15,6 +16,8 @@ import {
 import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { currentMonthKey, fmt, relativeDay, todayISO } from '@/lib/dates';
 import { formatBRL } from '@/lib/money';
+import { useSearchParams } from 'react-router';
+import { useAccounts } from '../accountHooks';
 import { useCategories } from '../categories';
 import { RecurringModal } from '../components/RecurringModal';
 import { TransactionForm } from '../components/TransactionForm';
@@ -29,12 +32,18 @@ const PAGE_SIZE = 15;
 export function TransactionsPage() {
   const transactions = useFinanceStore((s) => s.transactions);
   const deleteTransaction = useFinanceStore((s) => s.deleteTransaction);
+  const deleteInstallmentGroup = useFinanceStore((s) => s.deleteInstallmentGroup);
+  const accounts = useAccounts();
+  // Link vindo da tela de contas: /finance/transactions?conta=<id>
+  const [params] = useSearchParams();
+  const accountParam = params.get('conta');
   const categories = useCategories();
 
   const [filters, setFilters] = useState<TransactionFilters>({
     month: currentMonthKey(),
     category: 'all',
     type: 'all',
+    account: accountParam && accounts.some((a) => a.id === accountParam) ? accountParam : 'all',
     search: '',
   });
   const [page, setPage] = useState(0);
@@ -72,7 +81,9 @@ export function TransactionsPage() {
   };
 
   const today = todayISO();
-  const hasFilters = filters.category !== 'all' || filters.type !== 'all' || filters.search !== '';
+  const hasFilters =
+    filters.category !== 'all' || filters.type !== 'all' || filters.account !== 'all' || filters.search !== '';
+  const showAccounts = accounts.length > 1;
 
   return (
     <>
@@ -92,7 +103,9 @@ export function TransactionsPage() {
       />
       <SectionTabs tabs={FINANCE_TABS} />
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto]">
+      <div
+        className={`mb-4 grid gap-2 sm:grid-cols-2 ${showAccounts ? 'lg:grid-cols-[1fr_auto_auto_auto_auto]' : 'lg:grid-cols-[1fr_auto_auto_auto]'}`}
+      >
         <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
           <Input
@@ -124,6 +137,16 @@ export function TransactionsPage() {
             </option>
           ))}
         </Select>
+        {showAccounts && (
+          <Select aria-label="Conta" value={filters.account} onChange={(e) => update({ account: e.target.value })}>
+            <option value="all">Todas as contas</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <SegmentedControl<TransactionType | 'all'>
           label="Tipo"
           value={filters.type}
@@ -132,6 +155,7 @@ export function TransactionsPage() {
             { value: 'all', label: 'Tudo' },
             { value: 'income', label: 'Receitas' },
             { value: 'expense', label: 'Despesas' },
+            { value: 'transfer', label: 'Transf.' },
           ]}
         />
       </div>
@@ -159,7 +183,7 @@ export function TransactionsPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => update({ category: 'all', type: 'all', search: '' })}
+                  onClick={() => update({ category: 'all', type: 'all', account: 'all', search: '' })}
                 >
                   Limpar filtros
                 </Button>
@@ -233,8 +257,42 @@ export function TransactionsPage() {
         }}
       />
       <RecurringModal open={recurringOpen} onClose={() => setRecurringOpen(false)} />
+      <Modal
+        open={Boolean(toDelete?.installment)}
+        onClose={() => setToDelete(null)}
+        title="Excluir compra parcelada?"
+        description={
+          toDelete?.installment
+            ? `"${toDelete.title}" é a parcela ${toDelete.installment.index} de ${toDelete.installment.count}.`
+            : undefined
+        }
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (toDelete) deleteTransaction(toDelete.id);
+                setToDelete(null);
+              }}
+            >
+              Só esta parcela
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (toDelete?.installment) deleteInstallmentGroup(toDelete.installment.groupId);
+                setToDelete(null);
+              }}
+            >
+              Todas as parcelas
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-2">Excluir a compra inteira apaga todas as parcelas, inclusive as futuras.</p>
+      </Modal>
       <ConfirmDialog
-        open={Boolean(toDelete)}
+        open={Boolean(toDelete) && !toDelete?.installment}
         title="Excluir lançamento?"
         message={
           toDelete

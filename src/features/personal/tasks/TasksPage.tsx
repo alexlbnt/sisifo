@@ -15,7 +15,7 @@ import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { addDaysISO, fmt, relativeDay, todayISO } from '@/lib/dates';
 import { findArea, useAreas } from '../meta';
 import { iconFor } from '@/components/ui/icons';
-import { overdueTasks, tasksForDay } from '../selectors';
+import { overdueTasks, sortTasks, tasksForDay } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Area, Task } from '../types';
 import { TaskBoard } from './TaskBoard';
@@ -157,9 +157,7 @@ export function TasksPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {dayAreas.map(({ id: area, label, icon }) => {
-              const items = dayTasks
-                .filter((t) => t.area === area)
-                .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done'));
+              const items = sortTasks(dayTasks.filter((t) => t.area === area));
               const Icon = iconFor(icon);
               return (
                 <Card

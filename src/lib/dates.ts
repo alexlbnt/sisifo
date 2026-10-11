@@ -29,6 +29,11 @@ export function addDaysISO(iso: ISODate, days: number): ISODate {
   return toISODate(addDays(parseISO(iso), days));
 }
 
+/** Soma meses a uma data; dia 31 em mês curto vira o último dia. */
+export function addMonthsISO(iso: ISODate, months: number): ISODate {
+  return toISODate(addMonths(parseISO(iso), months));
+}
+
 export function monthKeyOf(iso: ISODate): MonthKey {
   return iso.slice(0, 7);
 }

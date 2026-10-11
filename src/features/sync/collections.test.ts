@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defaultAccounts } from '@/features/finance/accounts';
 import { defaultCategories } from '@/features/finance/defaultCategories';
 import type { FinanceState } from '@/features/finance/types';
 import { defaultAreas } from '@/features/personal/defaultAreas';
@@ -11,6 +12,7 @@ const finance = (): FinanceState => ({
   transactions: [],
   recurring: [],
   categories: defaultCategories(),
+  accounts: defaultAccounts(),
   budgets: { food: 50000 },
 });
 
@@ -36,6 +38,8 @@ const goal = (subtasks: Goal['subtasks']): Goal => ({
 const personal = (p: Partial<PersonalState> = {}): PersonalState => ({
   areas: defaultAreas(),
   goals: [],
+  goalEntries: [],
+  reviews: [],
   tasks: [],
   habits: [],
   workoutPlans: [],
@@ -151,5 +155,23 @@ describe('formato antigo e registros sem dono', () => {
     const back = rebuild(new Map());
     expect(back.finance.categories.map((c) => c.id)).toContain('food');
     expect(back.personal.areas.map((a) => a.id)).toEqual(['routine', 'academic', 'training']);
+  });
+});
+
+describe('hábitos de quantidade e dias pulados na sincronização', () => {
+  const water: Habit = {
+    ...habit(['2026-10-05']),
+    kind: 'quantity',
+    target: 8,
+    amounts: { '2026-10-05': 8, '2026-10-06': 3 },
+    skips: { '2026-10-07': 'Doente' },
+  };
+
+  it('cada dia vira um registro com quantidade ou justificativa; a volta reconstrói igual', () => {
+    const records = toRecords(finance(), personal({ habits: [water] }));
+    expect(records.get('habitLogs|h1:2026-10-06')?.data).toEqual({ habitId: 'h1', date: '2026-10-06', value: 3 });
+    expect(records.get('habitLogs|h1:2026-10-07')?.data).toEqual({ habitId: 'h1', date: '2026-10-07', skip: 'Doente' });
+    expect(records.get('habits|h1')?.data).not.toHaveProperty('amounts');
+    expect(rebuild(records).personal.habits[0]).toEqual(water);
   });
 });

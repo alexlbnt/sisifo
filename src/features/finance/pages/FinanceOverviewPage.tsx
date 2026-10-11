@@ -5,13 +5,14 @@ import { Button, Card, EmptyState, MonthSwitcher, PageHeader, SectionTabs } from
 import { currentMonthKey, relativeDay, todayISO } from '@/lib/dates';
 import { CategoryDonut } from '../charts/CategoryDonut';
 import { MonthlyBars } from '../charts/MonthlyBars';
+import { liquidBalance } from '../accounts';
 import { BudgetPanel } from '../components/BudgetPanel';
+import { ForecastCard } from '../components/ForecastCard';
 import { RecurringModal } from '../components/RecurringModal';
 import { SummaryStrip } from '../components/SummaryStrip';
 import { TransactionForm } from '../components/TransactionForm';
 import { TransactionRow } from '../components/TransactionRow';
 import {
-  balanceUpTo,
   budgetStatus,
   expensesByCategory,
   filterTransactions,
@@ -24,12 +25,14 @@ import { useFinanceStore } from '../store';
 export const FINANCE_TABS = [
   { to: '/finance', label: 'Visão geral', end: true },
   { to: '/finance/transactions', label: 'Lançamentos' },
+  { to: '/finance/accounts', label: 'Contas' },
 ];
 
 export function FinanceOverviewPage() {
   const transactions = useFinanceStore((s) => s.transactions);
   const budgets = useFinanceStore((s) => s.budgets);
   const categories = useFinanceStore((s) => s.categories);
+  const accounts = useFinanceStore((s) => s.accounts);
   const [month, setMonth] = useState(currentMonthKey());
   const [formOpen, setFormOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
@@ -37,7 +40,7 @@ export function FinanceOverviewPage() {
   const today = todayISO();
   const data = useMemo(
     () => ({
-      balance: balanceUpTo(transactions, today),
+      balance: liquidBalance(accounts, transactions, today),
       summary: summarizeMonth(transactions, month),
       slices: expensesByCategory(transactions, month),
       evolution: monthlyEvolution(transactions, month, 6),
@@ -46,10 +49,11 @@ export function FinanceOverviewPage() {
         month,
         category: 'all',
         type: 'all',
+        account: 'all',
         search: '',
       }).slice(0, 6),
     }),
-    [transactions, budgets, categories, month, today],
+    [transactions, budgets, categories, accounts, month, today],
   );
 
   return (
@@ -86,7 +90,14 @@ export function FinanceOverviewPage() {
           </Card>
         </div>
 
-        <BudgetPanel statuses={data.budgets} />
+        {month === currentMonthKey() ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ForecastCard />
+            <BudgetPanel statuses={data.budgets} />
+          </div>
+        ) : (
+          <BudgetPanel statuses={data.budgets} />
+        )}
 
         <Card
           title="Últimos lançamentos do mês"

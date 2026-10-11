@@ -4,9 +4,11 @@
  */
 import { z } from 'zod';
 import {
+  accountSchema,
   areaSchema,
   budgetsSchema,
   categorySchema,
+  goalEntrySchema,
   goalRecordSchema,
   habitLogSchema,
   habitRecordSchema,
@@ -14,6 +16,7 @@ import {
   subtaskRecordSchema,
   taskSchema,
   transactionSchema,
+  weeklyReviewSchema,
   workoutPlanSchema,
   workoutSessionSchema,
 } from './schemas.js';
@@ -23,12 +26,15 @@ export const COLLECTION_SCHEMAS = {
   transactions: transactionSchema,
   recurring: recurringRuleSchema,
   categories: categorySchema,
+  accounts: accountSchema,
   goals: goalRecordSchema,
+  goalEntries: goalEntrySchema,
   subtasks: subtaskRecordSchema,
   tasks: taskSchema,
   habits: habitRecordSchema,
   habitLogs: habitLogSchema,
   areas: areaSchema,
+  reviews: weeklyReviewSchema,
   workoutPlans: workoutPlanSchema,
   workoutSessions: workoutSessionSchema,
   /** Documentos únicos (ex.: id "budgets"). */

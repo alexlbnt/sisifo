@@ -18,7 +18,7 @@ export function SummaryStrip({ balanceCents, summary }: SummaryStripProps) {
       className="grid overflow-hidden rounded-2xl border border-line bg-surface sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]"
     >
       <div className="border-b border-line bg-accent-soft/60 px-5 py-5 sm:col-span-2 lg:col-span-1 lg:border-r lg:border-b-0">
-        <p className="text-[13px] text-ink-2">Saldo atual</p>
+        <p className="text-[13px] text-ink-2">Saldo disponível</p>
         <p
           className={cn(
             'mt-1 font-display text-[34px] leading-tight font-semibold tabular',
@@ -27,7 +27,7 @@ export function SummaryStrip({ balanceCents, summary }: SummaryStripProps) {
         >
           {formatBRL(balanceCents)}
         </p>
-        <p className="mt-1 text-xs text-ink-3">Soma de tudo o que entrou e saiu até hoje</p>
+        <p className="mt-1 text-xs text-ink-3">Conta, reserva e dinheiro hoje (sem investimentos e cartões)</p>
       </div>
       <Stat label="Receitas do mês" value={formatBRL(summary.incomeCents)} className="text-income" />
       <Stat label="Despesas do mês" value={formatBRL(summary.expenseCents)} />

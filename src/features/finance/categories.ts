@@ -2,12 +2,25 @@ import { useCallback } from 'react';
 import { type LucideIcon } from 'lucide-react';
 import { iconFor } from '@/components/ui/icons';
 import { useFinanceStore } from './store';
-import type { Category, CategoryId, TransactionType } from './types';
+import { TRANSFER_CATEGORY } from '@/shared/schemas';
+import type { CashType, Category, CategoryId } from './types';
+
+export { TRANSFER_CATEGORY };
+
+const TRANSFER: Category = {
+  id: TRANSFER_CATEGORY,
+  label: 'Transferência',
+  types: ['expense', 'income'],
+  icon: 'repeat',
+  color: 7,
+  archived: true,
+};
 
 export { DEFAULT_CATEGORIES, defaultCategories, isDefaultCategory } from './defaultCategories';
 
 /** Categoria de um id; ids que sumiram (ex.: ainda não sincronizados) viram um "Sem categoria". */
 export function findCategory(categories: Category[], id: CategoryId): Category {
+  if (id === TRANSFER_CATEGORY) return TRANSFER;
   return (
     categories.find((c) => c.id === id) ?? {
       id,
@@ -26,7 +39,7 @@ export function findCategory(categories: Category[], id: CategoryId): Category {
  */
 export function categoriesFor(
   categories: Category[],
-  type: TransactionType,
+  type: CashType,
   keep?: CategoryId,
 ): Category[] {
   return categories.filter((c) => c.types.includes(type) && (!c.archived || c.id === keep));
@@ -35,7 +48,7 @@ export function categoriesFor(
 /** Categoria inicial de um formulário: a preferida se estiver disponível, senão a primeira. */
 export function defaultCategoryFor(
   categories: Category[],
-  type: TransactionType,
+  type: CashType,
   preferred: CategoryId,
 ): CategoryId {
   const options = categoriesFor(categories, type);

@@ -1,4 +1,5 @@
 import { dateInMonth, lastMonths, monthKeyOf, type ISODate, type MonthKey } from '@/lib/dates';
+import { DEFAULT_ACCOUNT_ID } from '@/shared/schemas';
 import type {
   Budgets,
   CategoryId,
@@ -8,11 +9,13 @@ import type {
   TransactionFilters,
 } from './types';
 
+/** Efeito no total geral: transferências entre contas não mudam o total. */
 export function signedCents(t: Transaction): number {
+  if (t.type === 'transfer') return 0;
   return t.type === 'income' ? t.amountCents : -t.amountCents;
 }
 
-/** Saldo acumulado de todos os lançamentos até `upTo` (inclusive). */
+/** Soma de receitas menos despesas até `upTo` (inclusive), sem saldos iniciais das contas. */
 export function balanceUpTo(transactions: Transaction[], upTo: ISODate): number {
   return transactions.reduce((sum, t) => (t.date <= upTo ? sum + signedCents(t) : sum), 0);
 }
@@ -23,7 +26,7 @@ export function summarizeMonth(transactions: Transaction[], month: MonthKey): Mo
   for (const t of transactions) {
     if (monthKeyOf(t.date) !== month) continue;
     if (t.type === 'income') incomeCents += t.amountCents;
-    else expenseCents += t.amountCents;
+    else if (t.type === 'expense') expenseCents += t.amountCents;
   }
   const netCents = incomeCents - expenseCents;
   return {
@@ -111,6 +114,9 @@ export function filterTransactions(
         (filters.month === 'all' || monthKeyOf(t.date) === filters.month) &&
         (filters.category === 'all' || t.category === filters.category) &&
         (filters.type === 'all' || t.type === filters.type) &&
+        (filters.account === 'all' ||
+          (t.accountId ?? DEFAULT_ACCOUNT_ID) === filters.account ||
+          t.toAccountId === filters.account) &&
         (!search || t.title.toLocaleLowerCase('pt-BR').includes(search)),
     )
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
@@ -171,6 +177,8 @@ export function materializeRecurring(
           type: rule.type,
           category: rule.category,
           date,
+          ...(rule.accountId && { accountId: rule.accountId }),
+          ...(rule.toAccountId && { toAccountId: rule.toAccountId }),
           recurringId: rule.id,
           createdAt: nowStamp,
         });

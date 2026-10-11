@@ -3,7 +3,7 @@ import { ChevronDown, Flame, Plus } from 'lucide-react';
 import { Button, Card, ConfirmDialog, EmptyState, PageHeader } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { todayISO } from '@/lib/dates';
-import { isScheduled } from '../selectors';
+import { isDueOn } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Habit } from '../types';
 import { HabitCard } from './HabitCard';
@@ -19,7 +19,7 @@ export function HabitsPage() {
   const today = todayISO();
   const active = habits.filter((h) => !h.archived);
   const archived = habits.filter((h) => h.archived);
-  const dueToday = active.filter((h) => isScheduled(h, today));
+  const dueToday = active.filter((h) => isDueOn(h, today));
   const doneToday = dueToday.filter((h) => h.completions.includes(today));
 
   return (

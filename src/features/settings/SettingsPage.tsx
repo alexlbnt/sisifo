@@ -4,6 +4,7 @@ import { Button, Card, ConfirmDialog, PageHeader } from '@/components/ui';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
+import { NotificationsCard } from '@/features/notifications/NotificationsCard';
 import { InstallCard } from '@/features/pwa/InstallCard';
 import { useAuthStore } from '@/features/sync/authStore';
 import { SyncCard } from '@/features/sync/SyncCard';
@@ -37,6 +38,8 @@ export function SettingsPage() {
 
       <div className="flex max-w-2xl flex-col gap-4">
         <SyncCard />
+
+        <NotificationsCard />
 
         <InstallCard />
 

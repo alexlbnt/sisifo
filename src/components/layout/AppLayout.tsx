@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Settings } from 'lucide-react';
+import { CaptureFab, CaptureSidebarButton, QuickCapture } from '@/features/capture/QuickCapture';
 import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { UpdateToast } from '@/features/pwa/UpdateToast';
 import { FirstLinkDialog } from '@/features/sync/FirstLinkDialog';
@@ -32,9 +33,10 @@ function SidebarLink({ item }: { item: NavItem }) {
 function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 lg:flex">
-      <Link to="/" className="mb-7 px-2">
+      <Link to="/" className="mb-6 px-2">
         <Logo />
       </Link>
+      <CaptureSidebarButton />
       <nav className="flex flex-1 flex-col gap-5" aria-label="Principal">
         {NAV_GROUPS.map((group, i) => (
           <div key={group.label ?? i} className="flex flex-col gap-0.5">
@@ -121,6 +123,8 @@ export function AppLayout() {
         </main>
       </div>
       <BottomNav />
+      <CaptureFab />
+      <QuickCapture />
       <InstallBanner />
       <UpdateToast />
       <FirstLinkDialog />

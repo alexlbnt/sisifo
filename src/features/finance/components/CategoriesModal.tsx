@@ -17,7 +17,7 @@ import { cn } from '@/lib/cn';
 import { nextColorSlot, useCategories } from '../categories';
 import { useChartPalette } from '../charts/palette';
 import { useFinanceStore } from '../store';
-import type { Category, TransactionType } from '../types';
+import type { CashType, Category } from '../types';
 
 type Kind = 'expense' | 'income' | 'both';
 
@@ -27,10 +27,10 @@ const KIND_OPTIONS: { value: Kind; label: string }[] = [
   { value: 'both', label: 'As duas' },
 ];
 
-const kindOf = (types: TransactionType[]): Kind =>
+const kindOf = (types: CashType[]): Kind =>
   types.length === 2 ? 'both' : types[0] === 'income' ? 'income' : 'expense';
 
-const typesOf = (kind: Kind): TransactionType[] =>
+const typesOf = (kind: Kind): CashType[] =>
   kind === 'both' ? ['expense', 'income'] : [kind];
 
 export function CategoriesModal({ open, onClose }: { open: boolean; onClose: () => void }) {

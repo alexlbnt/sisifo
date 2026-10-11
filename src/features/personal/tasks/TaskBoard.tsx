@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Pencil, Target, Trash2 } from 'lucide-react'
 import { Badge, IconButton } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { TASK_STATUS, TASK_STATUS_ORDER, useAreaLookup } from '../meta';
+import { sortTasks } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Task } from '../types';
 
@@ -20,7 +21,7 @@ export function TaskBoard({ tasks, onEdit, onDelete }: TaskBoardProps) {
   return (
     <div className="grid grid-cols-3 gap-4">
       {TASK_STATUS_ORDER.map((status, col) => {
-        const items = tasks.filter((t) => t.status === status);
+        const items = sortTasks(tasks.filter((t) => t.status === status));
         return (
           <section
             key={status}

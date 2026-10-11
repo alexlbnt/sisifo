@@ -1,9 +1,32 @@
-import { addMonthsKey, currentMonthKey, dateInMonth, todayISO, type MonthKey } from '@/lib/dates';
+import { addMonthsISO, addMonthsKey, currentMonthKey, dateInMonth, todayISO, type MonthKey } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { seededRandom } from '@/lib/random';
+import { cardInvoices, DEFAULT_ACCOUNT_ID, splitInstallments } from './accounts';
 import { defaultCategories } from './defaultCategories';
 import { materializeRecurring } from './selectors';
-import type { CategoryId, FinanceState, RecurringRule, Transaction } from './types';
+import type { Account, CategoryId, FinanceState, RecurringRule, Transaction } from './types';
+
+/** Ids fixos nos dados de exemplo, para as metas de exemplo apontarem para a reserva. */
+export const MOCK_SAVINGS_ID = 'mock-reserva';
+const MOCK_CARD_ID = 'mock-cartao';
+
+const MOCK_ACCOUNTS: Account[] = [
+  { id: DEFAULT_ACCOUNT_ID, name: 'Conta principal', kind: 'checking', initialBalanceCents: 2_500_00, archived: false },
+  { id: MOCK_SAVINGS_ID, name: 'Reserva de emergência', kind: 'savings', initialBalanceCents: 9_000_00, archived: false },
+  {
+    id: MOCK_CARD_ID,
+    name: 'Cartão',
+    kind: 'credit',
+    initialBalanceCents: 0,
+    closingDay: 3,
+    dueDay: 10,
+    limitCents: 6_000_00,
+    archived: false,
+  },
+];
+
+/** Gastos variáveis que vão no cartão. */
+const ON_CARD = new Set(['Delivery', 'Cinema', 'Bar com amigos', 'Uber', 'Livro técnico', 'Presente']);
 
 interface VariableExpense {
   title: string;
@@ -38,7 +61,16 @@ function recurringRules(firstMonth: MonthKey): RecurringRule[] {
     { ...base, id: uid(), title: 'Academia', amountCents: 129_90, type: 'expense', category: 'health', dayOfMonth: 5 },
     { ...base, id: uid(), title: 'Mensalidade Muay Thai', amountCents: 220_00, type: 'expense', category: 'health', dayOfMonth: 8 },
     { ...base, id: uid(), title: 'Faculdade', amountCents: 890_00, type: 'expense', category: 'education', dayOfMonth: 10 },
-    { ...base, id: uid(), title: 'Aporte mensal', amountCents: 800_00, type: 'expense', category: 'investments', dayOfMonth: 6 },
+    {
+      ...base,
+      id: uid(),
+      title: 'Aporte na reserva',
+      amountCents: 800_00,
+      type: 'transfer',
+      category: 'transfer',
+      toAccountId: MOCK_SAVINGS_ID,
+      dayOfMonth: 6,
+    },
     { ...base, id: uid(), title: 'Streaming', amountCents: 55_90, type: 'expense', category: 'leisure', dayOfMonth: 20 },
   ];
 }
@@ -66,6 +98,7 @@ export function createFinanceMock(): FinanceState {
           type: 'expense',
           category: item.category,
           date,
+          ...(ON_CARD.has(item.title) && { accountId: MOCK_CARD_ID }),
           createdAt,
         });
       }
@@ -86,10 +119,44 @@ export function createFinanceMock(): FinanceState {
     }
   }
 
+  // Uma compra parcelada em 6x no cartão, há 2 meses.
+  const groupId = uid();
+  const firstInstallment = dateInMonth(addMonthsKey(current, -2), 14);
+  splitInstallments(2_394_00, 6).forEach((amountCents, i) => {
+    variable.push({
+      id: `${groupId}-${i + 1}`,
+      title: 'Notebook',
+      amountCents,
+      type: 'expense',
+      category: 'education',
+      date: addMonthsISO(firstInstallment, i),
+      accountId: MOCK_CARD_ID,
+      installment: { groupId, index: i + 1, count: 6 },
+      createdAt,
+    });
+  });
+
+  // Faturas já vencidas foram pagas pela conta principal, no vencimento.
+  const transactions = [...materializeRecurring(recurring, [], today), ...variable];
+  for (const inv of cardInvoices(MOCK_ACCOUNTS[2]!, transactions, today)) {
+    if (inv.dueDate > today) continue;
+    transactions.push({
+      id: uid(),
+      title: 'Pagamento da fatura',
+      amountCents: inv.totalCents,
+      type: 'transfer',
+      category: 'transfer',
+      date: inv.dueDate,
+      toAccountId: MOCK_CARD_ID,
+      createdAt,
+    });
+  }
+
   return {
     recurring,
-    transactions: [...materializeRecurring(recurring, [], today), ...variable],
+    transactions,
     categories: defaultCategories(),
+    accounts: MOCK_ACCOUNTS.map((a) => ({ ...a })),
     budgets: {
       housing: 2_400_00,
       food: 1_500_00,

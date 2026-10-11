@@ -39,3 +39,19 @@ model LoginAttempt {
   @@index([ip, createdAt])
   @@map("login_attempts")
 }
+
+/// Um aparelho inscrito para receber notificações (Web Push).
+model PushSubscription {
+  /// URL do serviço de push do navegador; identifica o aparelho.
+  endpoint  String   @id
+  p256dh    String
+  auth      String
+  /// Fuso do aparelho (ex.: America/Sao_Paulo), para calcular o "hoje" certo.
+  timeZone  String
+  /// Quais avisos o aparelho quer receber.
+  prefs     Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("push_subscriptions")
+}

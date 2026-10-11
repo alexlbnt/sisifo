@@ -1,8 +1,10 @@
+import { defaultAccounts } from '@/features/finance/accounts';
 import { defaultCategories } from '@/features/finance/defaultCategories';
 import { useFinanceStore } from '@/features/finance/store';
 import type { Budgets, FinanceState } from '@/features/finance/types';
 import { defaultAreas } from '@/features/personal/defaultAreas';
 import { usePersonalStore } from '@/features/personal/store';
+import { habitTarget } from '@/features/personal/selectors';
 import type { Goal, Habit, PersonalState, Subtask } from '@/features/personal/types';
 import { COLLECTION_NAMES, type CollectionName, type SyncChange } from '@/shared/sync';
 
@@ -16,8 +18,15 @@ import { COLLECTION_NAMES, type CollectionName, type SyncChange } from '@/shared
  * O orçamento é o documento settings|budgets.
  */
 
-const FINANCE_LISTS = ['transactions', 'recurring', 'categories'] as const satisfies readonly (keyof FinanceState)[];
-const PERSONAL_LISTS = ['areas', 'tasks', 'workoutPlans', 'workoutSessions'] as const satisfies readonly (keyof PersonalState)[];
+const FINANCE_LISTS = ['transactions', 'recurring', 'categories', 'accounts'] as const satisfies readonly (keyof FinanceState)[];
+const PERSONAL_LISTS = [
+  'areas',
+  'tasks',
+  'goalEntries',
+  'reviews',
+  'workoutPlans',
+  'workoutSessions',
+] as const satisfies readonly (keyof PersonalState)[];
 
 type FinanceList = (typeof FINANCE_LISTS)[number];
 type PersonalList = (typeof PERSONAL_LISTS)[number];
@@ -25,7 +34,7 @@ type PersonalList = (typeof PERSONAL_LISTS)[number];
 const BUDGETS_ID = 'budgets';
 
 /** Coleções que só existem por causa de outra; não contam como "dado próprio" do aparelho. */
-const STRUCTURAL: readonly CollectionName[] = ['settings', 'categories', 'areas'];
+const STRUCTURAL: readonly CollectionName[] = ['settings', 'categories', 'areas', 'accounts'];
 
 export interface LocalRecord {
   collection: CollectionName;
@@ -40,6 +49,10 @@ interface SubtaskRecord extends Subtask {
 interface HabitLogRecord {
   habitId: string;
   date: string;
+  /** Quantidade do dia (hábitos de quantidade). */
+  value?: number;
+  /** Dia pulado, com a justificativa. */
+  skip?: string;
 }
 
 export const recordKey = (collection: string, id: string) => `${collection}|${id}`;
@@ -97,10 +110,14 @@ export function toRecords(finance: FinanceState, personal: PersonalState): Map<s
     put('goals', goal.id, goal);
     for (const st of subtasks) put('subtasks', st.id, { ...st, goalId: goal.id } satisfies SubtaskRecord);
   }
-  for (const { completions, ...habit } of personal.habits) {
+  for (const { completions, amounts = {}, skips = {}, ...habit } of personal.habits) {
     put('habits', habit.id, habit);
-    for (const date of completions) {
-      put('habitLogs', habitLogId(habit.id, date), { habitId: habit.id, date } satisfies HabitLogRecord);
+    const dates = new Set([...completions, ...Object.keys(amounts), ...Object.keys(skips)]);
+    for (const date of dates) {
+      const log: HabitLogRecord = { habitId: habit.id, date };
+      if (amounts[date] !== undefined) log.value = amounts[date];
+      if (skips[date] !== undefined) log.skip = skips[date];
+      put('habitLogs', habitLogId(habit.id, date), log);
     }
   }
   put('settings', BUDGETS_ID, finance.budgets);
@@ -126,10 +143,12 @@ const byOrder = (a: Subtask, b: Subtask) => a.order - b.order || a.id.localeComp
 
 /** Monta o estado das stores a partir dos registros. */
 export function rebuild(records: Map<string, LocalRecord>): Rebuilt {
-  const finance: FinanceState = { transactions: [], recurring: [], categories: [], budgets: {} };
+  const finance: FinanceState = { transactions: [], recurring: [], categories: [], accounts: [], budgets: {} };
   const personal: PersonalState = {
     areas: [],
     goals: [],
+    goalEntries: [],
+    reviews: [],
     tasks: [],
     habits: [],
     workoutPlans: [],
@@ -185,9 +204,28 @@ export function rebuild(records: Map<string, LocalRecord>): Rebuilt {
   for (const habit of habits) {
     const own = logsOf.get(habit.id);
     logsOf.delete(habit.id);
-    // Formato antigo: marcações dentro do hábito. Só vale enquanto não há registros próprios.
-    const dates = own ? own.map((r) => (r.data as HabitLogRecord).date) : (habit.completions ?? []);
-    personal.habits.push({ ...habit, completions: [...new Set(dates)].sort() });
+    const { completions: legacy, amounts: _a, skips: _s, ...rest } = habit;
+    if (!own) {
+      // Formato antigo: marcações dentro do hábito. Só vale enquanto não há registros próprios.
+      personal.habits.push({ ...rest, completions: [...new Set(legacy ?? [])].sort() });
+      continue;
+    }
+    const target = habitTarget(habit);
+    const completions: string[] = [];
+    const amounts: Record<string, number> = {};
+    const skips: Record<string, string> = {};
+    for (const { data } of own) {
+      const log = data as HabitLogRecord;
+      if (log.value !== undefined) amounts[log.date] = log.value;
+      if (log.skip !== undefined) skips[log.date] = log.skip;
+      else if (habit.kind === 'quantity' ? (log.value ?? target) >= target : true) completions.push(log.date);
+    }
+    personal.habits.push({
+      ...rest,
+      completions: [...new Set(completions)].sort(),
+      ...(Object.keys(amounts).length && { amounts }),
+      ...(Object.keys(skips).length && { skips }),
+    });
   }
 
   for (const list of [...subtasksOf.values(), ...logsOf.values()]) {
@@ -196,6 +234,7 @@ export function rebuild(records: Map<string, LocalRecord>): Rebuilt {
 
   // Dados de antes das categorias/áreas editáveis: volta a lista de fábrica.
   if (!finance.categories.length) finance.categories = defaultCategories();
+  if (!finance.accounts.length) finance.accounts = defaultAccounts();
   if (!personal.areas.length) personal.areas = defaultAreas();
 
   return { finance, personal, orphans: left };
@@ -224,10 +263,18 @@ export function applyRecords(changes: SyncChange[], mode: 'merge' | 'replace') {
 
 export function clearLocalData() {
   saveOrphans(new Map());
-  useFinanceStore.setState({ transactions: [], recurring: [], categories: defaultCategories(), budgets: {} });
+  useFinanceStore.setState({
+    transactions: [],
+    recurring: [],
+    categories: defaultCategories(),
+    accounts: defaultAccounts(),
+    budgets: {},
+  });
   usePersonalStore.setState({
     areas: defaultAreas(),
     goals: [],
+    goalEntries: [],
+    reviews: [],
     tasks: [],
     habits: [],
     workoutPlans: [],

@@ -15,10 +15,12 @@ function page<K extends string>(loader: () => Promise<Record<K, ComponentType>>,
 
 const FinanceOverviewPage = page(() => import('@/features/finance/pages/FinanceOverviewPage'), 'FinanceOverviewPage');
 const TransactionsPage = page(() => import('@/features/finance/pages/TransactionsPage'), 'TransactionsPage');
+const AccountsPage = page(() => import('@/features/finance/pages/AccountsPage'), 'AccountsPage');
 const TasksPage = page(() => import('@/features/personal/tasks/TasksPage'), 'TasksPage');
 const GoalsPage = page(() => import('@/features/personal/goals/GoalsPage'), 'GoalsPage');
 const HabitsPage = page(() => import('@/features/personal/habits/HabitsPage'), 'HabitsPage');
 const TrainingPage = page(() => import('@/features/personal/training/TrainingPage'), 'TrainingPage');
+const ReviewPage = page(() => import('@/features/review/ReviewPage'), 'ReviewPage');
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
 
 function Splash() {
@@ -54,10 +56,12 @@ export function App() {
           <Route index element={<TodayPage />} />
           <Route path="finance" element={<FinanceOverviewPage />} />
           <Route path="finance/transactions" element={<TransactionsPage />} />
+          <Route path="finance/accounts" element={<AccountsPage />} />
           <Route path="personal/tasks" element={<TasksPage />} />
           <Route path="personal/goals" element={<GoalsPage />} />
           <Route path="personal/habits" element={<HabitsPage />} />
           <Route path="personal/training" element={<TrainingPage />} />
+          <Route path="review" element={<ReviewPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

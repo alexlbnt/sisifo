@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createFinanceMock } from '@/features/finance/mock';
+import { defaultAccounts } from '@/features/finance/accounts';
 import { defaultCategories } from '@/features/finance/defaultCategories';
 import { useFinanceStore, withDefaults as withFinanceDefaults } from '@/features/finance/store';
 import type { FinanceState } from '@/features/finance/types';
@@ -9,14 +10,17 @@ import { usePersonalStore, withDefaults as withPersonalDefaults } from '@/featur
 import type { PersonalState } from '@/features/personal/types';
 import { todayISO } from '@/lib/dates';
 import {
+  accountSchema,
   areaSchema,
   budgetsSchema,
   categorySchema,
+  goalEntrySchema,
   goalSchema,
   habitSchema,
   recurringRuleSchema,
   taskSchema,
   transactionSchema,
+  weeklyReviewSchema,
   workoutPlanSchema,
   workoutSessionSchema,
 } from '@/shared/schemas';
@@ -27,12 +31,15 @@ const financeSchema = z.object({
   transactions: z.array(transactionSchema),
   recurring: z.array(recurringRuleSchema),
   categories: z.array(categorySchema).optional(),
+  accounts: z.array(accountSchema).optional(),
   budgets: budgetsSchema,
 });
 
 const personalSchema = z.object({
   areas: z.array(areaSchema).optional(),
   goals: z.array(goalSchema),
+  goalEntries: z.array(goalEntrySchema).optional(),
+  reviews: z.array(weeklyReviewSchema).optional(),
   tasks: z.array(taskSchema),
   habits: z.array(habitSchema),
   workoutPlans: z.array(workoutPlanSchema),
@@ -41,7 +48,7 @@ const personalSchema = z.object({
 
 const backupSchema = z.object({
   app: z.literal('sisifo'),
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   exportedAt: z.string(),
   finance: financeSchema,
   personal: personalSchema,
@@ -54,17 +61,20 @@ export function buildBackup(): Backup {
   const p = usePersonalStore.getState();
   return {
     app: 'sisifo',
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     finance: {
       transactions: f.transactions,
       recurring: f.recurring,
       categories: f.categories,
+      accounts: f.accounts,
       budgets: f.budgets as Record<string, number>,
     },
     personal: {
       areas: p.areas,
       goals: p.goals,
+      goalEntries: p.goalEntries,
+      reviews: p.reviews,
       tasks: p.tasks,
       habits: p.habits,
       workoutPlans: p.workoutPlans,
@@ -112,10 +122,18 @@ export function restoreSampleData() {
 }
 
 export function clearAllData() {
-  const emptyFinance: FinanceState = { transactions: [], recurring: [], categories: defaultCategories(), budgets: {} };
+  const emptyFinance: FinanceState = {
+    transactions: [],
+    recurring: [],
+    categories: defaultCategories(),
+    accounts: defaultAccounts(),
+    budgets: {},
+  };
   const emptyPersonal: PersonalState = {
     areas: defaultAreas(),
     goals: [],
+    goalEntries: [],
+    reviews: [],
     tasks: [],
     habits: [],
     workoutPlans: [],

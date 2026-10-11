@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Plus, Target } from 'lucide-react';
 import { Button, Card, ConfirmDialog, EmptyState, PageHeader, SectionTabs } from '@/components/ui';
 import { HORIZONS, HORIZON_ORDER } from '../meta';
-import { goalProgress } from '../selectors';
+import { goalMetrics } from '../selectors';
+import { useGoalContext } from './goalFormat';
 import { usePersonalStore } from '../store';
 import type { Goal } from '../types';
 import { PLANNING_TABS } from '../tasks/TasksPage';
@@ -12,6 +13,9 @@ import { GoalForm } from './GoalForm';
 export function GoalsPage() {
   const goals = usePersonalStore((s) => s.goals);
   const deleteGoal = usePersonalStore((s) => s.deleteGoal);
+  const entries = usePersonalStore((s) => s.goalEntries);
+  const ctx = useGoalContext();
+  const progressOf = (g: Goal) => goalMetrics(g, entries, ctx).progress;
   const [form, setForm] = useState<{ goal?: Goal } | null>(null);
   const [toDelete, setToDelete] = useState<Goal | null>(null);
 
@@ -19,7 +23,7 @@ export function GoalsPage() {
     <>
       <PageHeader
         title="Planejamento"
-        subtitle="Metas divididas em etapas: cada etapa concluída empurra a barra"
+        subtitle="Metas por etapas, por número ou em dinheiro, com o ritmo até o prazo"
         actions={
           <Button icon={Plus} onClick={() => setForm({})}>
             Nova meta
@@ -46,7 +50,7 @@ export function GoalsPage() {
           {HORIZON_ORDER.map((horizon) => {
             const items = goals
               .filter((g) => g.horizon === horizon)
-              .sort((a, b) => goalProgress(a) - goalProgress(b));
+              .sort((a, b) => progressOf(a) - progressOf(b));
             if (!items.length) return null;
             return (
               <section key={horizon} aria-labelledby={`h-${horizon}`}>
@@ -71,7 +75,7 @@ export function GoalsPage() {
         title="Excluir meta?"
         message={
           toDelete
-            ? `"${toDelete.title}" e suas ${toDelete.subtasks.length} etapas serão removidas. Tarefas ligadas a ela continuam, sem o vínculo.`
+            ? `"${toDelete.title}" será removida, com etapas e registros. Tarefas ligadas a ela continuam, sem o vínculo.`
             : ''
         }
         confirmLabel="Excluir meta"

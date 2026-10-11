@@ -37,6 +37,12 @@ export default defineConfig({
         // Atalhos ao segurar o ícone na tela inicial.
         shortcuts: [
           {
+            name: 'Captura rápida',
+            short_name: 'Capturar',
+            url: '/?captura=1',
+            icons: [{ src: '/pwa-192.png', sizes: '192x192' }],
+          },
+          {
             name: 'Novo lançamento',
             short_name: 'Lançamento',
             url: '/finance/transactions?novo=1',
@@ -63,6 +69,8 @@ export default defineConfig({
         // A API nunca passa pelo cache: dados pessoais e sessão vão sempre à rede.
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        // Recebe as notificações push e abre a tela certa ao tocar (public/push-sw.js).
+        importScripts: ['/push-sw.js'],
       },
     }),
   ],
