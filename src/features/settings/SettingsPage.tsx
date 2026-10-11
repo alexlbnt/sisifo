@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
-import { CircleCheck, Download, Eraser, RotateCcw, Upload } from 'lucide-react';
+import { CircleCheck, Download, Eraser, Layers, RotateCcw, Tags, Upload } from 'lucide-react';
 import { Button, Card, ConfirmDialog, PageHeader } from '@/components/ui';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
+import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
+import { AreasModal } from '@/features/personal/areas/AreasModal';
 import { InstallCard } from '@/features/pwa/InstallCard';
 import { useAuthStore } from '@/features/sync/authStore';
 import { SyncCard } from '@/features/sync/SyncCard';
@@ -13,6 +15,7 @@ export function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [confirm, setConfirm] = useState<'restore' | 'clear' | null>(null);
+  const [catalog, setCatalog] = useState<'categories' | 'areas' | null>(null);
   // Com sincronização ligada, apagar/restaurar/importar vale para todos os aparelhos.
   const synced = useAuthStore((s) => s.phase === 'ready');
   const scope = synced ? 'em todos os seus aparelhos' : 'deste navegador';
@@ -39,6 +42,20 @@ export function SettingsPage() {
 
         <Card title="Aparência">
           <ThemeSelector />
+        </Card>
+
+        <Card
+          title="Categorias e áreas"
+          description="Categorias organizam os lançamentos; áreas organizam metas, tarefas e hábitos."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={Tags} onClick={() => setCatalog('categories')}>
+              Categorias
+            </Button>
+            <Button variant="secondary" icon={Layers} onClick={() => setCatalog('areas')}>
+              Áreas
+            </Button>
+          </div>
         </Card>
 
         <Card
@@ -94,6 +111,9 @@ export function SettingsPage() {
           </div>
         </Card>
       </div>
+
+      <CategoriesModal open={catalog === 'categories'} onClose={() => setCatalog(null)} />
+      <AreasModal open={catalog === 'areas'} onClose={() => setCatalog(null)} />
 
       <ConfirmDialog
         open={confirm === 'restore'}

@@ -4,7 +4,7 @@ import { PieChart as PieIcon } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { formatBRL } from '@/lib/money';
-import { categoryLabel } from '../categories';
+import { useCategoryLookup } from '../categories';
 import type { CategorySlice } from '../selectors';
 import { ChartTooltipBox } from './ChartTooltip';
 import { useChartPalette } from './palette';
@@ -13,6 +13,7 @@ const pct = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDi
 
 export function CategoryDonut({ slices }: { slices: CategorySlice[] }) {
   const palette = useChartPalette();
+  const { label: categoryLabel } = useCategoryLookup();
   const [active, setActive] = useState<string | null>(null);
   const total = slices.reduce((sum, s) => sum + s.cents, 0);
 

@@ -3,7 +3,7 @@ import { Archive, ArchiveRestore, Flame, Pencil, Trash2, Trophy } from 'lucide-r
 import { CheckCircle, Heatmap, IconButton } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { addDaysISO, fmt, todayISO } from '@/lib/dates';
-import { AREAS } from '../meta';
+import { useAreaLookup } from '../meta';
 import { computeStreak, isScheduled } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Habit } from '../types';
@@ -24,7 +24,8 @@ export function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
   const streak = useMemo(() => computeStreak(habit, today), [habit, today]);
   const done = new Set(habit.completions);
   const last7 = Array.from({ length: 7 }, (_, i) => addDaysISO(today, i - 6));
-  const AreaIcon = AREAS[habit.area].icon;
+  const areas = useAreaLookup();
+  const AreaIcon = areas.icon(habit.area);
 
   return (
     <article className={cn('rounded-2xl border border-line bg-surface p-5', habit.archived && 'opacity-70')}>

@@ -18,6 +18,7 @@ import {
   monthlyEvolution,
   summarizeMonth,
 } from '../selectors';
+import { expenseCategoryOrder } from '../categories';
 import { useFinanceStore } from '../store';
 
 export const FINANCE_TABS = [
@@ -28,6 +29,7 @@ export const FINANCE_TABS = [
 export function FinanceOverviewPage() {
   const transactions = useFinanceStore((s) => s.transactions);
   const budgets = useFinanceStore((s) => s.budgets);
+  const categories = useFinanceStore((s) => s.categories);
   const [month, setMonth] = useState(currentMonthKey());
   const [formOpen, setFormOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
@@ -39,7 +41,7 @@ export function FinanceOverviewPage() {
       summary: summarizeMonth(transactions, month),
       slices: expensesByCategory(transactions, month),
       evolution: monthlyEvolution(transactions, month, 6),
-      budgets: budgetStatus(transactions, budgets, month),
+      budgets: budgetStatus(transactions, budgets, month, expenseCategoryOrder(categories)),
       recent: filterTransactions(transactions, {
         month,
         category: 'all',
@@ -47,7 +49,7 @@ export function FinanceOverviewPage() {
         search: '',
       }).slice(0, 6),
     }),
-    [transactions, budgets, month, today],
+    [transactions, budgets, categories, month, today],
   );
 
   return (

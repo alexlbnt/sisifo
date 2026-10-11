@@ -1,6 +1,7 @@
 import { addMonthsKey, currentMonthKey, dateInMonth, todayISO, type MonthKey } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { seededRandom } from '@/lib/random';
+import { defaultCategories } from './defaultCategories';
 import { materializeRecurring } from './selectors';
 import type { CategoryId, FinanceState, RecurringRule, Transaction } from './types';
 
@@ -88,6 +89,7 @@ export function createFinanceMock(): FinanceState {
   return {
     recurring,
     transactions: [...materializeRecurring(recurring, [], today), ...variable],
+    categories: defaultCategories(),
     budgets: {
       housing: 2_400_00,
       food: 1_500_00,

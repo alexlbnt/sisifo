@@ -1,13 +1,43 @@
-import { BookOpen, Dumbbell, type LucideIcon, Repeat } from 'lucide-react';
-import type { Area, GoalHorizon, TaskStatus, WorkoutKind } from './types';
+import { useCallback } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { iconFor } from '@/components/ui/icons';
+import { usePersonalStore } from './store';
+import type { Area, AreaDef, GoalHorizon, TaskStatus, WorkoutKind } from './types';
 
-export const AREAS: Record<Area, { label: string; icon: LucideIcon }> = {
-  routine: { label: 'Rotina e hábitos', icon: Repeat },
-  academic: { label: 'Acadêmico', icon: BookOpen },
-  training: { label: 'Treino', icon: Dumbbell },
-};
+export { DEFAULT_AREAS, defaultAreas } from './defaultAreas';
 
-export const AREA_ORDER: readonly Area[] = ['routine', 'academic', 'training'];
+/** Área de um id; ids que sumiram (ex.: ainda não sincronizados) viram "Sem área". */
+export function findArea(areas: AreaDef[], id: Area): AreaDef {
+  return areas.find((a) => a.id === id) ?? { id, label: 'Sem área', icon: 'more', archived: true };
+}
+
+/** Áreas para escolher num formulário: as ativas, mais `keep` (a atual do item editado). */
+export function selectableAreas(areas: AreaDef[], keep?: Area): AreaDef[] {
+  return areas.filter((a) => !a.archived || a.id === keep);
+}
+
+/** Área inicial de um formulário: a preferida se estiver ativa, senão a primeira ativa. */
+export function defaultAreaFor(areas: AreaDef[], preferred: Area = 'routine'): Area {
+  const options = selectableAreas(areas);
+  return (options.find((a) => a.id === preferred) ?? options[0])?.id ?? preferred;
+}
+
+export function useAreas(): AreaDef[] {
+  return usePersonalStore((s) => s.areas);
+}
+
+export interface AreaLookup {
+  get: (id: Area) => AreaDef;
+  label: (id: Area) => string;
+  icon: (id: Area) => LucideIcon;
+}
+
+/** Atalho para os componentes: nome e ícone da área pelo id. */
+export function useAreaLookup(): AreaLookup {
+  const areas = useAreas();
+  const get = useCallback((id: Area) => findArea(areas, id), [areas]);
+  return { get, label: (id) => get(id).label, icon: (id) => iconFor(get(id).icon) };
+}
 
 export const HORIZONS: Record<GoalHorizon, { label: string; hint: string }> = {
   short: { label: 'Curto prazo', hint: 'até 3 meses' },

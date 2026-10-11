@@ -5,7 +5,8 @@
  */
 import { z } from 'zod';
 
-export const CATEGORY_IDS = [
+/** Categorias que vêm de fábrica. Os ids são fixos para todos os aparelhos gerarem o mesmo registro. */
+export const DEFAULT_CATEGORY_IDS = [
   'salary',
   'freelance',
   'housing',
@@ -18,14 +19,20 @@ export const CATEGORY_IDS = [
   'other',
 ] as const;
 
+/** Áreas que vêm de fábrica (mesma ideia dos ids fixos das categorias). */
+export const DEFAULT_AREA_IDS = ['routine', 'academic', 'training'] as const;
+
 const id = z.string().min(1).max(100);
 const text = (max: number) => z.string().max(max);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data no formato AAAA-MM-DD');
+const monthKey = z.string().regex(/^\d{4}-\d{2}$/, 'mês no formato AAAA-MM');
 const timestamp = z.string().max(40);
 const cents = z.number().int().nonnegative().max(1_000_000_000_00);
-const category = z.enum(CATEGORY_IDS);
+/** Categoria e área apontam para itens editáveis pela pessoa. */
+const category = id;
+const area = id;
 const txType = z.enum(['income', 'expense']);
-const area = z.enum(['routine', 'academic', 'training']);
+const iconKey = z.string().min(1).max(40);
 const weekdayList = z.array(z.number().int().min(0).max(6)).max(7);
 const workoutKind = z.enum(['strength', 'muay_thai', 'cardio', 'mobility']);
 
@@ -49,9 +56,36 @@ export const recurringRuleSchema = z.object({
   dayOfMonth: z.number().int().min(1).max(31),
   startDate: isoDate,
   active: z.boolean(),
+  /** Meses (AAAA-MM) cujo lançamento foi excluído e não deve ser gerado de novo. */
+  skippedMonths: z.array(monthKey).max(1200).optional(),
 });
 
-export const budgetsSchema = z.partialRecord(category, cents);
+export const budgetsSchema = z.record(category, cents);
+
+export const categorySchema = z.object({
+  id,
+  label: text(60).min(1),
+  types: z.array(txType).min(1).max(2),
+  icon: iconKey,
+  /** Posição na paleta do gráfico (0 a 7). A cor acompanha a categoria, não o ranking. */
+  color: z.number().int().min(0).max(7),
+  archived: z.boolean(),
+});
+
+export const areaSchema = z.object({
+  id,
+  label: text(60).min(1),
+  icon: iconKey,
+  archived: z.boolean(),
+});
+
+export const subtaskSchema = z.object({
+  id,
+  title: text(200),
+  done: z.boolean(),
+  /** Ordem dentro da meta, fixa desde a criação: excluir uma etapa não mexe nas outras. */
+  order: z.number().int().nonnegative().max(1_000_000).optional(),
+});
 
 export const goalSchema = z.object({
   id,
@@ -60,7 +94,7 @@ export const goalSchema = z.object({
   horizon: z.enum(['short', 'medium', 'long']),
   area,
   deadline: isoDate.optional(),
-  subtasks: z.array(z.object({ id, title: text(200), done: z.boolean() })).max(200),
+  subtasks: z.array(subtaskSchema).max(200),
   createdAt: timestamp,
 });
 
@@ -103,3 +137,23 @@ export const workoutSessionSchema = z.object({
   notes: text(2000).optional(),
   planId: id.optional(),
 });
+
+/* ───────── Registros da sincronização ─────────
+ * Etapas de meta e marcações de hábito sobem como registros próprios. Assim,
+ * marcar um dia no celular e outro no computador não faz uma marcação apagar a
+ * outra: "a alteração mais recente vence" passa a valer por marcação.
+ */
+
+/** Meta sem as etapas (elas vão na coleção `subtasks`). Ainda aceita o formato antigo. */
+export const goalRecordSchema = goalSchema.extend({ subtasks: goalSchema.shape.subtasks.optional() });
+
+/** Hábito sem as marcações (elas vão na coleção `habitLogs`). Ainda aceita o formato antigo. */
+export const habitRecordSchema = habitSchema.extend({
+  completions: habitSchema.shape.completions.optional(),
+});
+
+/** Etapa de meta. O id é o da própria etapa. */
+export const subtaskRecordSchema = subtaskSchema.extend({ goalId: id });
+
+/** Um dia em que o hábito foi feito. Id: "<habitId>:<data>". */
+export const habitLogSchema = z.object({ habitId: id, date: isoDate });

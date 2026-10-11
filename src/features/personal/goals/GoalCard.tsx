@@ -3,7 +3,7 @@ import { CalendarClock, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Badge, CheckCircle, IconButton, Input, ProgressBar } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { daysBetween, fmt, todayISO } from '@/lib/dates';
-import { AREAS } from '../meta';
+import { useAreaLookup } from '../meta';
 import { goalProgress } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Goal } from '../types';
@@ -31,7 +31,8 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
   const progress = goalProgress(goal);
   const done = goal.subtasks.filter((s) => s.done).length;
   const complete = goal.subtasks.length > 0 && progress === 1;
-  const AreaIcon = AREAS[goal.area].icon;
+  const areas = useAreaLookup();
+  const AreaIcon = areas.icon(goal.area);
   const deadline = goal.deadline && !complete ? deadlineLabel(goal.deadline) : null;
 
   const submit = (e: FormEvent) => {
@@ -50,7 +51,7 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge>
               <AreaIcon className="size-3" aria-hidden />
-              {AREAS[goal.area].label}
+              {areas.label(goal.area)}
             </Badge>
             {deadline && (
               <Badge tone={deadline.tone}>

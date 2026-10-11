@@ -13,7 +13,8 @@ import {
 } from '@/components/ui';
 import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { addDaysISO, fmt, relativeDay, todayISO } from '@/lib/dates';
-import { AREAS, AREA_ORDER } from '../meta';
+import { findArea, useAreas } from '../meta';
+import { iconFor } from '@/components/ui/icons';
 import { overdueTasks, tasksForDay } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Area, Task } from '../types';
@@ -41,6 +42,14 @@ export function TasksPage() {
   useShortcutParam('nova', () => setForm({}));
 
   const dayTasks = useMemo(() => tasksForDay(tasks, day), [tasks, day]);
+  const areas = useAreas();
+  // Uma coluna por área ativa, mais as arquivadas que ainda têm tarefa no dia.
+  const dayAreas = useMemo(() => {
+    const ids = new Set(dayTasks.map((t) => t.area));
+    const list = areas.filter((a) => !a.archived || ids.has(a.id));
+    for (const id of ids) if (!list.some((a) => a.id === id)) list.push(findArea(areas, id));
+    return list;
+  }, [areas, dayTasks]);
   const overdue = useMemo(() => (day === today ? overdueTasks(tasks, today) : []), [tasks, day, today]);
   const doneCount = dayTasks.filter((t) => t.status === 'done').length;
 
@@ -147,11 +156,11 @@ export function TasksPage() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {AREA_ORDER.map((area) => {
+            {dayAreas.map(({ id: area, label, icon }) => {
               const items = dayTasks
                 .filter((t) => t.area === area)
                 .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done'));
-              const Icon = AREAS[area].icon;
+              const Icon = iconFor(icon);
               return (
                 <Card
                   key={area}
@@ -159,13 +168,13 @@ export function TasksPage() {
                   title={
                     <span className="flex items-center gap-2">
                       <Icon className="size-4 text-ink-3" aria-hidden />
-                      {AREAS[area].label}
+                      {label}
                     </span>
                   }
                   action={
                     <IconButton
                       icon={Plus}
-                      label={`Adicionar tarefa em ${AREAS[area].label}`}
+                      label={`Adicionar tarefa em ${label}`}
                       size="sm"
                       onClick={() => setForm({ area })}
                     />

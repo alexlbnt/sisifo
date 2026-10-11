@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Button, Field, Input, Modal, Select, WeekdayPicker } from '@/components/ui';
-import { AREAS, AREA_ORDER } from '../meta';
+import { defaultAreaFor, selectableAreas, useAreas } from '../meta';
 import { usePersonalStore } from '../store';
 import type { Area, Habit } from '../types';
 
@@ -27,7 +27,8 @@ function HabitFormInner({ onClose, habit }: HabitFormProps) {
   const updateHabit = usePersonalStore((s) => s.updateHabit);
 
   const [title, setTitle] = useState(habit?.title ?? '');
-  const [area, setArea] = useState<Area>(habit?.area ?? 'routine');
+  const areas = useAreas();
+  const [area, setArea] = useState<Area>(habit?.area ?? defaultAreaFor(areas));
   const [schedule, setSchedule] = useState<number[]>(habit?.schedule ?? [0, 1, 2, 3, 4, 5, 6]);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,9 +70,9 @@ function HabitFormInner({ onClose, habit }: HabitFormProps) {
         </Field>
         <Field label="Área" htmlFor={`${id}-area`}>
           <Select id={`${id}-area`} value={area} onChange={(e) => setArea(e.target.value as Area)}>
-            {AREA_ORDER.map((a) => (
-              <option key={a} value={a}>
-                {AREAS[a].label}
+            {selectableAreas(areas, habit?.area).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
               </option>
             ))}
           </Select>

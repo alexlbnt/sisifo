@@ -1,5 +1,4 @@
 import { dateInMonth, lastMonths, monthKeyOf, type ISODate, type MonthKey } from '@/lib/dates';
-import { EXPENSE_CATEGORY_ORDER } from './categories';
 import type {
   Budgets,
   CategoryId,
@@ -79,13 +78,19 @@ export interface BudgetStatus {
   level: 'ok' | 'warning' | 'over';
 }
 
+/**
+ * Uso do limite de cada categoria com orçamento no mês. `order` define a ordem
+ * de exibição (a das categorias); limites de categorias fora dela vêm no fim.
+ */
 export function budgetStatus(
   transactions: Transaction[],
   budgets: Budgets,
   month: MonthKey,
+  order: readonly CategoryId[] = [],
 ): BudgetStatus[] {
   const spent = new Map(expensesByCategory(transactions, month).map((s) => [s.category, s.cents]));
-  return EXPENSE_CATEGORY_ORDER.flatMap((category) => {
+  const ids = [...new Set([...order, ...Object.keys(budgets)])];
+  return ids.flatMap((category) => {
     const limitCents = budgets[category];
     if (!limitCents) return [];
     const spentCents = spent.get(category) ?? 0;
@@ -116,33 +121,51 @@ export function availableMonths(transactions: Transaction[]): MonthKey[] {
   return [...new Set(transactions.map((t) => monthKeyOf(t.date)))].sort().reverse();
 }
 
+/** Id determinístico: dois aparelhos gerando o mesmo mês criam o mesmo registro. */
+export function recurringTransactionId(ruleId: string, month: MonthKey): string {
+  return `rec-${ruleId}-${month}`;
+}
+
+/**
+ * Mês de competência de um lançamento gerado por regra. Vem do id, então
+ * continua certo mesmo se a pessoa mudou a data do lançamento.
+ */
+export function recurringMonthOf(t: Transaction): MonthKey | null {
+  if (!t.recurringId) return null;
+  const prefix = `rec-${t.recurringId}-`;
+  return t.id.startsWith(prefix) ? t.id.slice(prefix.length) : monthKeyOf(t.date);
+}
+
 /**
  * Gera os lançamentos das regras recorrentes que ainda não existem,
  * do mês de início da regra até `today`. Idempotente: rodar duas vezes
- * no mesmo dia não duplica nada.
+ * no mesmo dia não duplica nada. Meses em `skippedMonths` (lançamento
+ * excluído pela pessoa) não são gerados de novo.
  */
 export function materializeRecurring(
   rules: RecurringRule[],
   transactions: Transaction[],
   today: ISODate,
 ): Transaction[] {
-  const existing = new Set(
-    transactions.filter((t) => t.recurringId).map((t) => `${t.recurringId}|${monthKeyOf(t.date)}`),
-  );
+  const existing = new Set<string>();
+  for (const t of transactions) {
+    const month = recurringMonthOf(t);
+    if (month) existing.add(`${t.recurringId}|${month}`);
+  }
   const created: Transaction[] = [];
   const nowStamp = new Date().toISOString();
 
   for (const rule of rules) {
     if (!rule.active) continue;
+    const skipped = new Set(rule.skippedMonths);
     let month = monthKeyOf(rule.startDate);
     const lastMonth = monthKeyOf(today);
     while (month <= lastMonth) {
       const date = dateInMonth(month, rule.dayOfMonth);
       const key = `${rule.id}|${month}`;
-      if (date >= rule.startDate && date <= today && !existing.has(key)) {
+      if (date >= rule.startDate && date <= today && !existing.has(key) && !skipped.has(month)) {
         created.push({
-          // Id determinístico: dois aparelhos gerando o mesmo mês criam o mesmo registro.
-          id: `rec-${rule.id}-${month}`,
+          id: recurringTransactionId(rule.id, month),
           title: rule.title,
           amountCents: rule.amountCents,
           type: rule.type,
@@ -157,6 +180,21 @@ export function materializeRecurring(
     }
   }
   return created;
+}
+
+/**
+ * Lançamentos gerados para meses que a pessoa excluiu. Acontece quando outro
+ * aparelho, ainda sem saber da exclusão, gerou o mês de novo: assim que a regra
+ * atualizada chega, o lançamento é removido outra vez.
+ */
+export function skippedRecurringIds(rules: RecurringRule[], transactions: Transaction[]): string[] {
+  const skipped = new Map(rules.map((r) => [r.id, new Set(r.skippedMonths)]));
+  return transactions
+    .filter((t) => {
+      const month = recurringMonthOf(t);
+      return month !== null && skipped.get(t.recurringId!)?.has(month) === true;
+    })
+    .map((t) => t.id);
 }
 
 function nextMonth(key: MonthKey): MonthKey {

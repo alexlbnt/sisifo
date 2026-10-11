@@ -4,10 +4,14 @@
  */
 import { z } from 'zod';
 import {
+  areaSchema,
   budgetsSchema,
-  goalSchema,
-  habitSchema,
+  categorySchema,
+  goalRecordSchema,
+  habitLogSchema,
+  habitRecordSchema,
   recurringRuleSchema,
+  subtaskRecordSchema,
   taskSchema,
   transactionSchema,
   workoutPlanSchema,
@@ -18,9 +22,13 @@ import {
 export const COLLECTION_SCHEMAS = {
   transactions: transactionSchema,
   recurring: recurringRuleSchema,
-  goals: goalSchema,
+  categories: categorySchema,
+  goals: goalRecordSchema,
+  subtasks: subtaskRecordSchema,
   tasks: taskSchema,
-  habits: habitSchema,
+  habits: habitRecordSchema,
+  habitLogs: habitLogSchema,
+  areas: areaSchema,
   workoutPlans: workoutPlanSchema,
   workoutSessions: workoutSessionSchema,
   /** Documentos únicos (ex.: id "budgets"). */

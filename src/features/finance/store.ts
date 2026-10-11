@@ -3,11 +3,14 @@ import { persist } from 'zustand/middleware';
 import { todayISO } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { persistInitialState } from '@/lib/persistNow';
+import { defaultCategories } from './defaultCategories';
 import { createFinanceMock } from './mock';
-import { materializeRecurring } from './selectors';
+import { materializeRecurring, recurringMonthOf, skippedRecurringIds } from './selectors';
 import type {
   Budgets,
+  Category,
   CategoryId,
+  CategoryInput,
   FinanceState,
   RecurringRuleInput,
   TransactionInput,
@@ -26,6 +29,12 @@ interface FinanceActions {
 
   setBudget: (category: CategoryId, cents: number | null) => void;
   setBudgets: (budgets: Budgets) => void;
+
+  addCategory: (input: CategoryInput) => void;
+  updateCategory: (id: CategoryId, input: CategoryInput) => void;
+  setCategoryArchived: (id: CategoryId, archived: boolean) => void;
+  /** Só exclui categoria sem uso (lançamentos, recorrências ou limite). Devolve se excluiu. */
+  deleteCategory: (id: CategoryId) => boolean;
 
   replaceAll: (state: FinanceState) => void;
 }
@@ -52,8 +61,24 @@ export const useFinanceStore = create<FinanceStore>()(
           transactions: s.transactions.map((t) => (t.id === id ? { ...t, ...input } : t)),
         })),
 
+      // Excluir um lançamento gerado por regra marca o mês como pulado; sem isso,
+      // a regra o criaria de novo na próxima abertura do app.
       deleteTransaction: (id) =>
-        set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) })),
+        set((s) => {
+          const target = s.transactions.find((t) => t.id === id);
+          const month = target ? recurringMonthOf(target) : null;
+          return {
+            transactions: s.transactions.filter((t) => t.id !== id),
+            recurring:
+              month === null
+                ? s.recurring
+                : s.recurring.map((r) =>
+                    r.id === target!.recurringId && !r.skippedMonths?.includes(month)
+                      ? { ...r, skippedMonths: [...(r.skippedMonths ?? []), month].sort() }
+                      : r,
+                  ),
+          };
+        }),
 
       addRecurring: (input) => {
         set((s) => ({ recurring: [...s.recurring, { ...input, id: uid() }] }));
@@ -61,7 +86,12 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       updateRecurring: (id, input) => {
-        set((s) => ({ recurring: s.recurring.map((r) => (r.id === id ? { ...input, id } : r)) }));
+        // Mantém os meses pulados, que o formulário não conhece.
+        set((s) => ({
+          recurring: s.recurring.map((r) =>
+            r.id === id ? { ...input, skippedMonths: input.skippedMonths ?? r.skippedMonths, id } : r,
+          ),
+        }));
         get().syncRecurring();
       },
 
@@ -76,8 +106,10 @@ export const useFinanceStore = create<FinanceStore>()(
 
       syncRecurring: () => {
         const { recurring, transactions } = get();
-        const created = materializeRecurring(recurring, transactions, todayISO());
-        if (created.length) set({ transactions: [...transactions, ...created] });
+        const stale = new Set(skippedRecurringIds(recurring, transactions));
+        const kept = stale.size ? transactions.filter((t) => !stale.has(t.id)) : transactions;
+        const created = materializeRecurring(recurring, kept, todayISO());
+        if (created.length || stale.size) set({ transactions: [...kept, ...created] });
       },
 
       setBudget: (category, cents) =>
@@ -90,20 +122,47 @@ export const useFinanceStore = create<FinanceStore>()(
 
       setBudgets: (budgets) => set({ budgets }),
 
-      replaceAll: (state) => set(state),
+      addCategory: (input) =>
+        set((s) => ({ categories: [...s.categories, { ...input, id: uid(), archived: false }] })),
+
+      updateCategory: (id, input) =>
+        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, ...input } : c)) })),
+
+      setCategoryArchived: (id, archived) =>
+        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, archived } : c)) })),
+
+      deleteCategory: (id) => {
+        const s = get();
+        const inUse =
+          s.transactions.some((t) => t.category === id) ||
+          s.recurring.some((r) => r.category === id) ||
+          s.budgets[id] !== undefined;
+        if (inUse) return false;
+        set({ categories: s.categories.filter((c) => c.id !== id) });
+        return true;
+      },
+
+      replaceAll: (state) => set(withDefaults(state)),
     }),
     {
       name: FINANCE_STORAGE_KEY,
-      version: 1,
-      partialize: ({ transactions, recurring, budgets }): FinanceState => ({
+      version: 2,
+      partialize: ({ transactions, recurring, categories, budgets }): FinanceState => ({
         transactions,
         recurring,
+        categories,
         budgets,
       }),
       // Ponto único para evoluir o formato salvo sem perder dados.
-      migrate: (persisted) => persisted as FinanceState,
+      // v2: categorias editáveis (antes eram fixas no código).
+      migrate: (persisted) => withDefaults(persisted as FinanceState),
     },
   ),
 );
 
 persistInitialState(useFinanceStore, FINANCE_STORAGE_KEY);
+
+/** Sem nenhuma categoria (dados antigos ou "começar do zero"), volta a lista de fábrica. */
+export function withDefaults<T extends Partial<FinanceState>>(state: T): T & { categories: Category[] } {
+  return { ...state, categories: state.categories?.length ? state.categories : defaultCategories() };
+}

@@ -254,7 +254,14 @@ export async function startSync(handlers: { onUnauthorized: () => void }): Promi
         }
         state = { ...emptyState(), linked: true, cursor: remote.cursor };
         captureLocalChanges();
-        state.outbox = {};
+        // Só fica na fila o que o servidor ainda não tem igual: por exemplo, dados
+        // no formato antigo convertidos aqui ou as categorias de fábrica.
+        const remoteHash = new Map(
+          remote.changes.map((c) => [recordKey(c.collection, c.id), c.data === null ? null : hashValue(c.data)]),
+        );
+        for (const [key, change] of Object.entries(state.outbox)) {
+          if (remoteHash.get(key) === hashValue(change.data)) delete state.outbox[key];
+        }
         save();
       } else if (hasLocalData()) {
         // Servidor vazio e aparelho com dados: a pessoa decide (ver resolveFirstLink).

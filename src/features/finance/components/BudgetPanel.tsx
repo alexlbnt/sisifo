@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { AlertTriangle, CircleCheck, Gauge, OctagonAlert, SlidersHorizontal } from 'lucide-react';
 import { Button, Card, EmptyState, Field, Input, Modal, ProgressBar } from '@/components/ui';
 import { centsToInput, formatBRL, parseBRL } from '@/lib/money';
-import { CATEGORY_ICONS, EXPENSE_CATEGORY_ORDER, categoryLabel } from '../categories';
+import { useCategories, useCategoryLookup } from '../categories';
 import type { BudgetStatus } from '../selectors';
 import { useFinanceStore } from '../store';
 import type { Budgets } from '../types';
@@ -15,6 +15,7 @@ const LEVEL = {
 
 export function BudgetPanel({ statuses }: { statuses: BudgetStatus[] }) {
   const [editing, setEditing] = useState(false);
+  const categories = useCategoryLookup();
 
   return (
     <Card
@@ -41,14 +42,14 @@ export function BudgetPanel({ statuses }: { statuses: BudgetStatus[] }) {
         <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
           {statuses.map((s) => {
             const level = LEVEL[s.level];
-            const Icon = CATEGORY_ICONS[s.category];
+            const Icon = categories.icon(s.category);
             const StatusIcon = level.icon;
             return (
               <li key={s.category}>
                 <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
                   <span className="flex items-center gap-2 font-medium">
                     <Icon className="size-4 text-ink-3" aria-hidden />
-                    {categoryLabel(s.category)}
+                    {categories.label(s.category)}
                   </span>
                   <span className="text-ink-2 tabular">
                     {formatBRL(s.spentCents)}
@@ -58,7 +59,7 @@ export function BudgetPanel({ statuses }: { statuses: BudgetStatus[] }) {
                 <ProgressBar
                   value={s.ratio}
                   tone={level.tone}
-                  label={`${categoryLabel(s.category)}: ${Math.round(s.ratio * 100)}% do limite`}
+                  label={`${categories.label(s.category)}: ${Math.round(s.ratio * 100)}% do limite`}
                 />
                 {s.level !== 'ok' && (
                   <p
@@ -88,16 +89,22 @@ function BudgetModalInner({ onClose }: { onClose: () => void }) {
   const id = useId();
   const budgets = useFinanceStore((s) => s.budgets);
   const setBudgets = useFinanceStore((s) => s.setBudgets);
+  const { label: categoryLabel } = useCategoryLookup();
+  // Categorias de despesa ativas, mais as arquivadas que ainda têm limite.
+  const allCategories = useCategories();
+  const [ids] = useState(() =>
+    allCategories
+      .filter((c) => c.types.includes('expense') && (!c.archived || budgets[c.id] !== undefined))
+      .map((c) => c.id),
+  );
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      EXPENSE_CATEGORY_ORDER.map((c) => [c, budgets[c] ? centsToInput(budgets[c]) : '']),
-    ),
+    Object.fromEntries(ids.map((c) => [c, budgets[c] ? centsToInput(budgets[c]) : ''])),
   );
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
     const next: Budgets = {};
-    for (const c of EXPENSE_CATEGORY_ORDER) {
+    for (const c of ids) {
       const raw = values[c]?.trim();
       if (!raw) continue;
       const cents = parseBRL(raw);
@@ -127,7 +134,7 @@ function BudgetModalInner({ onClose }: { onClose: () => void }) {
       }
     >
       <div className="grid grid-cols-2 gap-3">
-        {EXPENSE_CATEGORY_ORDER.map((c) => (
+        {ids.map((c) => (
           <Field key={c} label={categoryLabel(c)} htmlFor={`${id}-${c}`}>
             <Input
               id={`${id}-${c}`}

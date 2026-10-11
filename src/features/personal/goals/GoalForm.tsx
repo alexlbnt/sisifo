@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Button, Field, Input, Modal, Select, Textarea } from '@/components/ui';
-import { AREAS, AREA_ORDER, HORIZONS, HORIZON_ORDER } from '../meta';
+import { HORIZONS, HORIZON_ORDER, defaultAreaFor, selectableAreas, useAreas } from '../meta';
 import { usePersonalStore } from '../store';
 import type { Area, Goal, GoalHorizon } from '../types';
 
@@ -23,7 +23,8 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
   const [title, setTitle] = useState(goal?.title ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [horizon, setHorizon] = useState<GoalHorizon>(goal?.horizon ?? 'short');
-  const [area, setArea] = useState<Area>(goal?.area ?? 'routine');
+  const areas = useAreas();
+  const [area, setArea] = useState<Area>(goal?.area ?? defaultAreaFor(areas));
   const [deadline, setDeadline] = useState(goal?.deadline ?? '');
   const [steps, setSteps] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +89,9 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
           </Field>
           <Field label="Área" htmlFor={`${id}-area`}>
             <Select id={`${id}-area`} value={area} onChange={(e) => setArea(e.target.value as Area)}>
-              {AREA_ORDER.map((a) => (
-                <option key={a} value={a}>
-                  {AREAS[a].label}
+              {selectableAreas(areas, goal?.area).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
                 </option>
               ))}
             </Select>

@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Button, Field, Input, Modal, Select } from '@/components/ui';
 import { todayISO, type ISODate } from '@/lib/dates';
-import { AREAS, AREA_ORDER } from '../meta';
+import { defaultAreaFor, selectableAreas, useAreas } from '../meta';
 import { usePersonalStore } from '../store';
 import type { Area, Task } from '../types';
 
@@ -18,14 +18,15 @@ export function TaskForm(props: TaskFormProps) {
   return <TaskFormInner key={props.task?.id ?? 'new'} {...props} />;
 }
 
-function TaskFormInner({ onClose, task, defaultDate, defaultArea = 'routine' }: TaskFormProps) {
+function TaskFormInner({ onClose, task, defaultDate, defaultArea }: TaskFormProps) {
   const id = useId();
   const goals = usePersonalStore((s) => s.goals);
   const addTask = usePersonalStore((s) => s.addTask);
   const updateTask = usePersonalStore((s) => s.updateTask);
 
   const [title, setTitle] = useState(task?.title ?? '');
-  const [area, setArea] = useState<Area>(task?.area ?? defaultArea);
+  const areas = useAreas();
+  const [area, setArea] = useState<Area>(task?.area ?? defaultArea ?? defaultAreaFor(areas));
   const [date, setDate] = useState(task?.date ?? defaultDate ?? todayISO());
   const [link, setLink] = useState(task?.link ? `${task.link.goalId}|${task.link.subtaskId}` : '');
   const [error, setError] = useState<string | null>(null);
@@ -86,9 +87,9 @@ function TaskFormInner({ onClose, task, defaultDate, defaultArea = 'routine' }: 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Área" htmlFor={`${id}-area`}>
             <Select id={`${id}-area`} value={area} onChange={(e) => setArea(e.target.value as Area)}>
-              {AREA_ORDER.map((a) => (
-                <option key={a} value={a}>
-                  {AREAS[a].label}
+              {selectableAreas(areas, task?.area).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
                 </option>
               ))}
             </Select>

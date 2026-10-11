@@ -2,7 +2,19 @@ import type { ISODate } from '@/lib/dates';
 
 /* ───────── Áreas ───────── */
 
-export type Area = 'routine' | 'academic' | 'training';
+/** Id de uma área. As de fábrica têm ids fixos (`routine`, `academic`, `training`). */
+export type Area = string;
+
+export interface AreaDef {
+  id: Area;
+  label: string;
+  /** Chave de `ICONS` (components/ui/icons). */
+  icon: string;
+  /** Arquivada: some dos formulários, mas continua nos itens antigos. */
+  archived: boolean;
+}
+
+export type AreaInput = Pick<AreaDef, 'label' | 'icon'>;
 
 /* ───────── Metas ───────── */
 
@@ -12,6 +24,8 @@ export interface Subtask {
   id: string;
   title: string;
   done: boolean;
+  /** Ordem dentro da meta, fixa desde a criação. */
+  order: number;
 }
 
 export interface Goal {
@@ -107,6 +121,7 @@ export type WorkoutSessionInput = Omit<WorkoutSession, 'id'>;
 /* ───────── Estado ───────── */
 
 export interface PersonalState {
+  areas: AreaDef[];
   goals: Goal[];
   tasks: Task[];
   habits: Habit[];

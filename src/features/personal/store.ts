@@ -3,8 +3,12 @@ import { persist } from 'zustand/middleware';
 import type { ISODate } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { persistInitialState } from '@/lib/persistNow';
+import { defaultAreas } from './defaultAreas';
 import { createPersonalMock } from './mock';
 import type {
+  Area,
+  AreaDef,
+  AreaInput,
   Goal,
   GoalInput,
   HabitInput,
@@ -17,6 +21,13 @@ import type {
 } from './types';
 
 interface PersonalActions {
+  /* Áreas */
+  addArea: (input: AreaInput) => void;
+  updateArea: (id: Area, input: AreaInput) => void;
+  setAreaArchived: (id: Area, archived: boolean) => void;
+  /** Só exclui área sem uso (metas, tarefas ou hábitos). Devolve se excluiu. */
+  deleteArea: (id: Area) => boolean;
+
   /* Metas */
   addGoal: (input: GoalInput, subtaskTitles?: string[]) => void;
   updateGoal: (id: string, input: GoalInput) => void;
@@ -83,8 +94,30 @@ function applyTaskStatus(state: PersonalState, id: string, status: TaskStatus) {
 
 export const usePersonalStore = create<PersonalStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...createPersonalMock(),
+
+      /* ───────── Áreas ───────── */
+
+      addArea: (input) =>
+        set((s) => ({ areas: [...s.areas, { ...input, id: uid(), archived: false }] })),
+
+      updateArea: (id, input) =>
+        set((s) => ({ areas: s.areas.map((a) => (a.id === id ? { ...a, ...input } : a)) })),
+
+      setAreaArchived: (id, archived) =>
+        set((s) => ({ areas: s.areas.map((a) => (a.id === id ? { ...a, archived } : a)) })),
+
+      deleteArea: (id) => {
+        const s = get();
+        const inUse =
+          s.goals.some((g) => g.area === id) ||
+          s.tasks.some((t) => t.area === id) ||
+          s.habits.some((h) => h.area === id);
+        if (inUse) return false;
+        set({ areas: s.areas.filter((a) => a.id !== id) });
+        return true;
+      },
 
       /* ───────── Metas ───────── */
 
@@ -98,7 +131,7 @@ export const usePersonalStore = create<PersonalStore>()(
               subtasks: subtaskTitles
                 .map((t) => t.trim())
                 .filter(Boolean)
-                .map((title) => ({ id: uid(), title, done: false })),
+                .map((title, order) => ({ id: uid(), title, done: false, order })),
               createdAt: new Date().toISOString(),
             },
           ],
@@ -117,7 +150,13 @@ export const usePersonalStore = create<PersonalStore>()(
         set((s) => ({
           goals: s.goals.map((g) =>
             g.id === goalId
-              ? { ...g, subtasks: [...g.subtasks, { id: uid(), title: title.trim(), done: false }] }
+              ? {
+                  ...g,
+                  subtasks: [
+                    ...g.subtasks,
+                    { id: uid(), title: title.trim(), done: false, order: nextOrder(g) },
+                  ],
+                }
               : g,
           ),
         })),
@@ -252,21 +291,44 @@ export const usePersonalStore = create<PersonalStore>()(
       deleteSession: (id) =>
         set((s) => ({ workoutSessions: s.workoutSessions.filter((x) => x.id !== id) })),
 
-      replaceAll: (state) => set(state),
+      replaceAll: (state) => set(withDefaults(state)),
     }),
     {
       name: PERSONAL_STORAGE_KEY,
-      version: 1,
-      partialize: ({ goals, tasks, habits, workoutPlans, workoutSessions }): PersonalState => ({
+      version: 2,
+      partialize: ({ areas, goals, tasks, habits, workoutPlans, workoutSessions }): PersonalState => ({
+        areas,
         goals,
         tasks,
         habits,
         workoutPlans,
         workoutSessions,
       }),
-      migrate: (persisted) => persisted as PersonalState,
+      // v2: áreas editáveis e ordem fixa nas etapas das metas.
+      migrate: (persisted) => withDefaults(persisted as PersonalState),
     },
   ),
 );
 
 persistInitialState(usePersonalStore, PERSONAL_STORAGE_KEY);
+
+function nextOrder(goal: Goal): number {
+  return goal.subtasks.reduce((max, s) => Math.max(max, s.order + 1), 0);
+}
+
+/**
+ * Completa dados antigos ou incompletos: sem nenhuma área, volta a lista de
+ * fábrica; etapas sem ordem (formato antigo) recebem a posição em que estão.
+ */
+export function withDefaults<T extends Partial<PersonalState>>(state: T): T & { areas: AreaDef[] } {
+  const goals = state.goals?.map((g) =>
+    g.subtasks.every((st) => typeof st.order === 'number')
+      ? g
+      : { ...g, subtasks: g.subtasks.map((st, i) => ({ ...st, order: st.order ?? i })) },
+  );
+  return {
+    ...state,
+    ...(goals && { goals }),
+    areas: state.areas?.length ? state.areas : defaultAreas(),
+  };
+}

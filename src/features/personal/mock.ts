@@ -1,6 +1,7 @@
 import { addDaysISO, todayISO, weekdayOf } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { seededRandom } from '@/lib/random';
+import { defaultAreas } from './defaultAreas';
 import type {
   Goal,
   Habit,
@@ -13,7 +14,7 @@ import type {
 } from './types';
 
 function subtasks(items: Array<[string, boolean]>): Subtask[] {
-  return items.map(([title, done]) => ({ id: uid(), title, done }));
+  return items.map(([title, done], order) => ({ id: uid(), title, done, order }));
 }
 
 export function createPersonalMock(): PersonalState {
@@ -191,5 +192,5 @@ export function createPersonalMock(): PersonalState {
     }
   }
 
-  return { goals, tasks, habits, workoutPlans, workoutSessions };
+  return { areas: defaultAreas(), goals, tasks, habits, workoutPlans, workoutSessions };
 }

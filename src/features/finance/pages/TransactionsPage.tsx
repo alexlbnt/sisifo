@@ -15,7 +15,7 @@ import {
 import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { currentMonthKey, fmt, relativeDay, todayISO } from '@/lib/dates';
 import { formatBRL } from '@/lib/money';
-import { CATEGORIES } from '../categories';
+import { useCategories } from '../categories';
 import { RecurringModal } from '../components/RecurringModal';
 import { TransactionForm } from '../components/TransactionForm';
 import { TransactionRow } from '../components/TransactionRow';
@@ -29,6 +29,7 @@ const PAGE_SIZE = 15;
 export function TransactionsPage() {
   const transactions = useFinanceStore((s) => s.transactions);
   const deleteTransaction = useFinanceStore((s) => s.deleteTransaction);
+  const categories = useCategories();
 
   const [filters, setFilters] = useState<TransactionFilters>({
     month: currentMonthKey(),
@@ -117,7 +118,7 @@ export function TransactionsPage() {
           onChange={(e) => update({ category: e.target.value as CategoryId | 'all' })}
         >
           <option value="all">Todas as categorias</option>
-          {Object.values(CATEGORIES).map((c) => (
+          {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
             </option>
@@ -235,7 +236,13 @@ export function TransactionsPage() {
       <ConfirmDialog
         open={Boolean(toDelete)}
         title="Excluir lançamento?"
-        message={toDelete ? `"${toDelete.title}" de ${formatBRL(toDelete.amountCents)} será removido.` : ''}
+        message={
+          toDelete
+            ? `"${toDelete.title}" de ${formatBRL(toDelete.amountCents)} será removido.${
+                toDelete.recurringId ? ' A recorrência continua nos próximos meses, mas não recria este.' : ''
+              }`
+            : ''
+        }
         confirmLabel="Excluir lançamento"
         onConfirm={() => toDelete && deleteTransaction(toDelete.id)}
         onClose={() => setToDelete(null)}

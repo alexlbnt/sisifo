@@ -12,10 +12,10 @@ import {
   Select,
 } from '@/components/ui';
 import { TransactionForm } from '@/features/finance/components/TransactionForm';
-import { categoryLabel } from '@/features/finance/categories';
+import { expenseCategoryOrder, useCategoryLookup } from '@/features/finance/categories';
 import { balanceUpTo, budgetStatus, summarizeMonth } from '@/features/finance/selectors';
 import { useFinanceStore } from '@/features/finance/store';
-import { AREAS, AREA_ORDER } from '@/features/personal/meta';
+import { defaultAreaFor, selectableAreas, useAreaLookup, useAreas } from '@/features/personal/meta';
 import {
   computeStreak,
   goalProgress,
@@ -44,7 +44,9 @@ export function TodayPage() {
   const addTask = usePersonalStore((s) => s.addTask);
 
   const [draft, setDraft] = useState('');
-  const [draftArea, setDraftArea] = useState<Area>('routine');
+  const areas = useAreas();
+  const areaLookup = useAreaLookup();
+  const [draftArea, setDraftArea] = useState<Area>(() => defaultAreaFor(areas));
   const [sessionPlan, setSessionPlan] = useState<WorkoutPlan | null>(null);
 
   const todayTasks = useMemo(
@@ -114,7 +116,7 @@ export function TodayPage() {
           ) : (
             <ul className="divide-y divide-line">
               {todayTasks.map((t) => (
-                <TaskItem key={t.id} task={t} meta={AREAS[t.area].label} />
+                <TaskItem key={t.id} task={t} meta={areaLookup.label(t.area)} />
               ))}
             </ul>
           )}
@@ -131,9 +133,9 @@ export function TodayPage() {
               onChange={(e) => setDraftArea(e.target.value as Area)}
               className="w-36 shrink-0"
             >
-              {AREA_ORDER.map((a) => (
-                <option key={a} value={a}>
-                  {AREAS[a].label}
+              {selectableAreas(areas, draftArea).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
                 </option>
               ))}
             </Select>
@@ -275,6 +277,8 @@ export function TodayPage() {
 function FinanceGlance() {
   const transactions = useFinanceStore((s) => s.transactions);
   const budgets = useFinanceStore((s) => s.budgets);
+  const categories = useFinanceStore((s) => s.categories);
+  const { label: categoryLabel } = useCategoryLookup();
   const [formOpen, setFormOpen] = useState(false);
   const today = todayISO();
 
@@ -283,9 +287,11 @@ function FinanceGlance() {
     return {
       balance: balanceUpTo(transactions, today),
       summary: summarizeMonth(transactions, month),
-      alerts: budgetStatus(transactions, budgets, month).filter((b) => b.level !== 'ok'),
+      alerts: budgetStatus(transactions, budgets, month, expenseCategoryOrder(categories)).filter(
+        (b) => b.level !== 'ok',
+      ),
     };
-  }, [transactions, budgets, today]);
+  }, [transactions, budgets, categories, today]);
 
   return (
     <Card

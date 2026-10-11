@@ -4,6 +4,8 @@ import {
   budgetStatus,
   expensesByCategory,
   materializeRecurring,
+  recurringMonthOf,
+  skippedRecurringIds,
   summarizeMonth,
 } from './selectors';
 import type { RecurringRule, Transaction } from './types';
@@ -105,5 +107,55 @@ describe('materializeRecurring entre aparelhos', () => {
     const b = materializeRecurring([rule], [], '2026-10-20').map((t) => t.id);
     expect(a).toEqual(['rec-r9-2026-09', 'rec-r9-2026-10']);
     expect(b).toEqual(a);
+  });
+});
+
+describe('budgetStatus com categorias editáveis', () => {
+  it('segue a ordem das categorias e inclui categorias criadas', () => {
+    const extra = [...data, tx({ date: '2026-10-09', amountCents: 9000, type: 'expense', category: 'pets' })];
+    const status = budgetStatus(extra, { pets: 10000, food: 100000 }, '2026-10', ['food', 'pets']);
+    expect(status.map((s) => s.category)).toEqual(['food', 'pets']);
+    expect(status[1]).toMatchObject({ spentCents: 9000, level: 'warning' });
+  });
+
+  it('limite de categoria fora da ordem (ex.: excluída) vem no fim', () => {
+    const status = budgetStatus(data, { sumiu: 100, food: 100000 }, '2026-10', ['food']);
+    expect(status.map((s) => s.category)).toEqual(['food', 'sumiu']);
+  });
+});
+
+describe('lançamento recorrente excluído', () => {
+  const rule: RecurringRule = {
+    id: 'r1',
+    title: 'Aluguel',
+    amountCents: 100000,
+    type: 'expense',
+    category: 'housing',
+    dayOfMonth: 10,
+    startDate: '2026-08-01',
+    active: true,
+  };
+
+  it('não é gerado de novo quando o mês está em skippedMonths', () => {
+    const all = materializeRecurring([rule], [], '2026-10-20');
+    const withoutSept = all.filter((t) => t.date !== '2026-09-10');
+    const skipping = { ...rule, skippedMonths: ['2026-09'] };
+    expect(materializeRecurring([skipping], withoutSept, '2026-10-20')).toHaveLength(0);
+    // Sem o mês pulado (comportamento antigo), ele voltaria.
+    expect(materializeRecurring([rule], withoutSept, '2026-10-20').map((t) => t.date)).toEqual(['2026-09-10']);
+  });
+
+  it('mudar a data do lançamento gerado não faz o mês ser gerado de novo', () => {
+    const [aug] = materializeRecurring([rule], [], '2026-08-31');
+    const moved = { ...aug!, date: '2026-09-02' };
+    expect(recurringMonthOf(moved)).toBe('2026-08');
+    expect(materializeRecurring([rule], [moved], '2026-08-31')).toHaveLength(0);
+  });
+
+  it('aponta o lançamento que outro aparelho recriou para um mês pulado', () => {
+    const all = materializeRecurring([rule], [], '2026-10-20');
+    const skipping = { ...rule, skippedMonths: ['2026-09'] };
+    expect(skippedRecurringIds([skipping], all)).toEqual(['rec-r1-2026-09']);
+    expect(skippedRecurringIds([rule], all)).toEqual([]);
   });
 });

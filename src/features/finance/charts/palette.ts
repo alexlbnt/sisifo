@@ -1,5 +1,5 @@
 import { useResolvedTheme } from '@/features/settings/themeStore';
-import { EXPENSE_CATEGORY_ORDER } from '../categories';
+import { findCategory, useCategories } from '../categories';
 import type { CategoryId } from '../types';
 
 /**
@@ -18,6 +18,8 @@ const CHROME = {
 
 export interface ChartPalette {
   category: (id: CategoryId) => string;
+  /** As 8 cores categóricas, na ordem dos slots (`Category.color`). */
+  slots: readonly string[];
   income: string;
   expense: string;
   grid: string;
@@ -29,12 +31,11 @@ export interface ChartPalette {
 export function useChartPalette(): ChartPalette {
   const mode = useResolvedTheme();
   const slots = SLOTS[mode];
+  const categories = useCategories();
   return {
-    // A cor acompanha a categoria; categorias de receita usam o último slot neutro.
-    category: (id) => {
-      const index = EXPENSE_CATEGORY_ORDER.indexOf(id);
-      return slots[index >= 0 ? index : 7] ?? slots[7];
-    },
+    // A cor acompanha a categoria (campo `color`), nunca a posição no ranking.
+    category: (id) => slots[findCategory(categories, id).color] ?? slots[7],
+    slots,
     income: slots[0],
     expense: slots[1],
     ...CHROME[mode],

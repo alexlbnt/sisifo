@@ -1,18 +1,24 @@
-import type { ISODate } from '@/lib/dates';
-import { CATEGORY_IDS } from '@/shared/schemas';
-
-export { CATEGORY_IDS };
+import type { ISODate, MonthKey } from '@/lib/dates';
 
 export type TransactionType = 'income' | 'expense';
 
-export type CategoryId = (typeof CATEGORY_IDS)[number];
+/** Id de uma categoria. As de fábrica têm ids fixos (`salary`, `food`...); as criadas, um uid. */
+export type CategoryId = string;
 
-export interface CategoryMeta {
+export interface Category {
   id: CategoryId;
   label: string;
   /** Em quais tipos de lançamento a categoria aparece no formulário. */
-  types: readonly TransactionType[];
+  types: TransactionType[];
+  /** Chave de `ICONS` (components/ui/icons). */
+  icon: string;
+  /** Posição na paleta do gráfico (0 a 7). */
+  color: number;
+  /** Arquivada: some dos formulários, mas continua nos lançamentos antigos. */
+  archived: boolean;
 }
+
+export type CategoryInput = Omit<Category, 'id' | 'archived'>;
 
 export interface Transaction {
   id: string;
@@ -40,6 +46,8 @@ export interface RecurringRule {
   /** Primeiro dia em que a regra vale. */
   startDate: ISODate;
   active: boolean;
+  /** Meses cujo lançamento gerado foi excluído: não são gerados de novo. */
+  skippedMonths?: MonthKey[];
 }
 
 export type RecurringRuleInput = Omit<RecurringRule, 'id'>;
@@ -50,6 +58,7 @@ export type Budgets = Partial<Record<CategoryId, number>>;
 export interface FinanceState {
   transactions: Transaction[];
   recurring: RecurringRule[];
+  categories: Category[];
   budgets: Budgets;
 }
 

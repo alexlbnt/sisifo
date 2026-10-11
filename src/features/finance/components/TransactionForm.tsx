@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Button, Field, Input, Modal, SegmentedControl, Select } from '@/components/ui';
 import { todayISO } from '@/lib/dates';
 import { centsToInput, parseBRL } from '@/lib/money';
-import { categoriesFor } from '../categories';
+import { categoriesFor, defaultCategoryFor, useCategories } from '../categories';
 import { useFinanceStore } from '../store';
 import type { CategoryId, Transaction, TransactionType } from '../types';
 
@@ -33,19 +33,19 @@ function TransactionFormInner({ onClose, transaction, defaultType = 'expense' }:
   const [type, setType] = useState<TransactionType>(transaction?.type ?? defaultType);
   const [title, setTitle] = useState(transaction?.title ?? '');
   const [amount, setAmount] = useState(transaction ? centsToInput(transaction.amountCents) : '');
-  const [category, setCategory] = useState<CategoryId>(
-    transaction?.category ?? (defaultType === 'income' ? 'salary' : 'food'),
-  );
+  const allCategories = useCategories();
+  const preferred = (t: TransactionType) => defaultCategoryFor(allCategories, t, t === 'income' ? 'salary' : 'food');
+  const [category, setCategory] = useState<CategoryId>(transaction?.category ?? preferred(defaultType));
   const [date, setDate] = useState(transaction?.date ?? todayISO());
   const [repeat, setRepeat] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  const categories = categoriesFor(type);
+  const categories = categoriesFor(allCategories, type, transaction?.category);
 
   const changeType = (next: TransactionType) => {
     setType(next);
-    if (!categoriesFor(next).some((c) => c.id === category)) {
-      setCategory(next === 'income' ? 'salary' : 'food');
+    if (!categoriesFor(allCategories, next, transaction?.category).some((c) => c.id === category)) {
+      setCategory(preferred(next));
     }
   };
 

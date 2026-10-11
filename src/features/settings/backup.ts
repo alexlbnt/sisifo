@@ -1,13 +1,17 @@
 import { z } from 'zod';
 import { createFinanceMock } from '@/features/finance/mock';
-import { useFinanceStore } from '@/features/finance/store';
+import { defaultCategories } from '@/features/finance/defaultCategories';
+import { useFinanceStore, withDefaults as withFinanceDefaults } from '@/features/finance/store';
 import type { FinanceState } from '@/features/finance/types';
 import { createPersonalMock } from '@/features/personal/mock';
-import { usePersonalStore } from '@/features/personal/store';
+import { defaultAreas } from '@/features/personal/defaultAreas';
+import { usePersonalStore, withDefaults as withPersonalDefaults } from '@/features/personal/store';
 import type { PersonalState } from '@/features/personal/types';
 import { todayISO } from '@/lib/dates';
 import {
+  areaSchema,
   budgetsSchema,
+  categorySchema,
   goalSchema,
   habitSchema,
   recurringRuleSchema,
@@ -17,23 +21,27 @@ import {
   workoutSessionSchema,
 } from '@/shared/schemas';
 
+// Categorias, áreas e a ordem das etapas são opcionais: backups da versão 1 não têm.
+// Na importação, o que faltar é completado pelos `withDefaults` das stores.
 const financeSchema = z.object({
   transactions: z.array(transactionSchema),
   recurring: z.array(recurringRuleSchema),
+  categories: z.array(categorySchema).optional(),
   budgets: budgetsSchema,
-}) satisfies z.ZodType<FinanceState>;
+});
 
 const personalSchema = z.object({
+  areas: z.array(areaSchema).optional(),
   goals: z.array(goalSchema),
   tasks: z.array(taskSchema),
   habits: z.array(habitSchema),
   workoutPlans: z.array(workoutPlanSchema),
   workoutSessions: z.array(workoutSessionSchema),
-}) satisfies z.ZodType<PersonalState>;
+});
 
 const backupSchema = z.object({
   app: z.literal('sisifo'),
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   exportedAt: z.string(),
   finance: financeSchema,
   personal: personalSchema,
@@ -46,10 +54,16 @@ export function buildBackup(): Backup {
   const p = usePersonalStore.getState();
   return {
     app: 'sisifo',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
-    finance: { transactions: f.transactions, recurring: f.recurring, budgets: f.budgets },
+    finance: {
+      transactions: f.transactions,
+      recurring: f.recurring,
+      categories: f.categories,
+      budgets: f.budgets as Record<string, number>,
+    },
     personal: {
+      areas: p.areas,
       goals: p.goals,
       tasks: p.tasks,
       habits: p.habits,
@@ -87,8 +101,8 @@ export async function importBackup(file: File): Promise<ImportResult> {
       error: `O arquivo não é um backup do Sísifo válido (${where}: ${issue?.message ?? 'formato inesperado'}).`,
     };
   }
-  useFinanceStore.getState().replaceAll(parsed.data.finance);
-  usePersonalStore.getState().replaceAll(parsed.data.personal);
+  useFinanceStore.getState().replaceAll(withFinanceDefaults(parsed.data.finance));
+  usePersonalStore.getState().replaceAll(withPersonalDefaults(parsed.data.personal as Partial<PersonalState>) as PersonalState);
   return { ok: true };
 }
 
@@ -98,8 +112,9 @@ export function restoreSampleData() {
 }
 
 export function clearAllData() {
-  const emptyFinance: FinanceState = { transactions: [], recurring: [], budgets: {} };
+  const emptyFinance: FinanceState = { transactions: [], recurring: [], categories: defaultCategories(), budgets: {} };
   const emptyPersonal: PersonalState = {
+    areas: defaultAreas(),
     goals: [],
     tasks: [],
     habits: [],

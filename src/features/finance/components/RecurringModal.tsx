@@ -14,7 +14,7 @@ import {
 } from '@/components/ui';
 import { todayISO } from '@/lib/dates';
 import { centsToInput, formatBRL, parseBRL } from '@/lib/money';
-import { categoriesFor, categoryLabel } from '../categories';
+import { categoriesFor, defaultCategoryFor, useCategories, useCategoryLookup } from '../categories';
 import { useFinanceStore } from '../store';
 import type { CategoryId, RecurringRule, TransactionType } from '../types';
 
@@ -24,6 +24,7 @@ export function RecurringModal({ open, onClose }: { open: boolean; onClose: () =
   const deleteRecurring = useFinanceStore((s) => s.deleteRecurring);
   const [editing, setEditing] = useState<RecurringRule | 'new' | null>(null);
   const [toDelete, setToDelete] = useState<RecurringRule | null>(null);
+  const { label: categoryLabel } = useCategoryLookup();
 
   const sorted = [...rules].sort(
     (a, b) => a.type.localeCompare(b.type) || a.dayOfMonth - b.dayOfMonth,
@@ -111,15 +112,17 @@ function RecurringForm({ rule, onClose }: { rule: RecurringRule | null; onClose:
   const [type, setType] = useState<TransactionType>(rule?.type ?? 'expense');
   const [title, setTitle] = useState(rule?.title ?? '');
   const [amount, setAmount] = useState(rule ? centsToInput(rule.amountCents) : '');
-  const [category, setCategory] = useState<CategoryId>(rule?.category ?? 'housing');
+  const allCategories = useCategories();
+  const preferred = (t: TransactionType) => defaultCategoryFor(allCategories, t, t === 'income' ? 'salary' : 'housing');
+  const [category, setCategory] = useState<CategoryId>(rule?.category ?? preferred(rule?.type ?? 'expense'));
   const [day, setDay] = useState(String(rule?.dayOfMonth ?? new Date().getDate()));
   const [startDate, setStartDate] = useState(rule?.startDate ?? todayISO());
   const [error, setError] = useState<string | null>(null);
 
   const changeType = (next: TransactionType) => {
     setType(next);
-    if (!categoriesFor(next).some((c) => c.id === category)) {
-      setCategory(next === 'income' ? 'salary' : 'housing');
+    if (!categoriesFor(allCategories, next, rule?.category).some((c) => c.id === category)) {
+      setCategory(preferred(next));
     }
   };
 
@@ -185,7 +188,7 @@ function RecurringForm({ rule, onClose }: { rule: RecurringRule | null; onClose:
         <div className="grid grid-cols-2 gap-3">
           <Field label="Categoria" htmlFor={`${id}-category`}>
             <Select id={`${id}-category`} value={category} onChange={(e) => setCategory(e.target.value as CategoryId)}>
-              {categoriesFor(type).map((c) => (
+              {categoriesFor(allCategories, type, rule?.category).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>

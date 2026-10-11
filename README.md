@@ -70,7 +70,8 @@ prisma/                         # schema.prisma e migrations
 - **Dinheiro em centavos inteiros** (`amountCents`). A formatação é feita só na exibição.
 - **Datas como `YYYY-MM-DD`**, comparadas como texto. Não há problema de fuso horário.
 - **Streak respeita a agenda do hábito.** Se o hábito é seg/qua/sex, a terça não quebra a sequência. O dia de hoje ainda pendente também não quebra.
-- **Recorrentes:** ao abrir o app, os lançamentos vencidos desde a última visita são criados. O processo é idempotente.
+- **Recorrentes:** ao abrir o app, os lançamentos vencidos desde a última visita são criados. O processo é idempotente. Excluir um lançamento gerado grava o mês em `skippedMonths` da regra, e ele não é recriado (nem por outro aparelho que ainda não sabia da exclusão).
+- **Categorias e áreas editáveis** (Configurações → Categorias e áreas). As de fábrica têm ids fixos (`food`, `routine`...). Uma categoria ou área em uso só pode ser arquivada: ela some dos formulários, mas continua nos itens antigos.
 - **Tarefa ligada a meta:** concluir a tarefa marca a etapa da meta, e o inverso também vale.
 - **Migrações:** cada store tem `version` e `migrate` no `persist`. Ao mudar o formato dos dados, suba a versão e converta ali.
 
@@ -92,6 +93,7 @@ Configuração em `vite.config.ts` (`vite-plugin-pwa`). Os ícones estão em `pu
 
 - **Local-first:** cada alteração é gravada no aparelho na hora. Um motor (`src/features/sync/engine.ts`) detecta o que mudou e envia em segundo plano, a cada alteração, ao voltar a internet, ao reabrir o app e a cada minuto.
 - **Conflitos:** a alteração mais recente vence, item a item. Exclusões viram "lápides" para os outros aparelhos saberem.
+- **Etapas e marcações são registros próprios:** cada etapa de meta (`subtasks`) e cada dia marcado de um hábito (`habitLogs`, id `<hábito>:<data>`) sobe separado da meta ou do hábito. Assim, marcar dias diferentes no celular e no computador não faz uma marcação apagar a outra. A ponte entre stores e registros fica em `src/features/sync/collections.ts` (`toRecords` / `rebuild`). Registros que chegam antes do item a que pertencem ficam guardados à parte até ele chegar.
 - **Primeiro login:** se o servidor já tem dados, eles substituem os do aparelho. Se o servidor está vazio, o app pergunta se envia os dados do aparelho ou começa do zero.
 - **Senha única:** só o hash (scrypt) fica em `SISIFO_PASSWORD_HASH`. A sessão é um cookie `HttpOnly` + `SameSite=Strict` assinado com `SESSION_SECRET`, válido por 30 dias. São 8 tentativas erradas por IP a cada 15 minutos.
 - **Trocar a senha:** rode `npm run hash-password` e atualize as duas variáveis. Um `SESSION_SECRET` novo desconecta todos os aparelhos.

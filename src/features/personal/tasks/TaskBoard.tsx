@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Pencil, Target, Trash2 } from 'lucide-react';
 import { Badge, IconButton } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { AREAS, TASK_STATUS, TASK_STATUS_ORDER } from '../meta';
+import { TASK_STATUS, TASK_STATUS_ORDER, useAreaLookup } from '../meta';
 import { usePersonalStore } from '../store';
 import type { Task } from '../types';
 
@@ -15,6 +15,7 @@ interface TaskBoardProps {
 export function TaskBoard({ tasks, onEdit, onDelete }: TaskBoardProps) {
   const setTaskStatus = usePersonalStore((s) => s.setTaskStatus);
   const goals = usePersonalStore((s) => s.goals);
+  const areas = useAreaLookup();
 
   return (
     <div className="grid grid-cols-3 gap-4">
@@ -32,7 +33,7 @@ export function TaskBoard({ tasks, onEdit, onDelete }: TaskBoardProps) {
             </h2>
             <ul className="flex flex-col gap-2">
               {items.map((task) => {
-                const Icon = AREAS[task.area].icon;
+                const Icon = areas.icon(task.area);
                 const goal = task.link && goals.find((g) => g.id === task.link?.goalId);
                 const prev = TASK_STATUS_ORDER[col - 1];
                 const next = TASK_STATUS_ORDER[col + 1];
@@ -44,7 +45,7 @@ export function TaskBoard({ tasks, onEdit, onDelete }: TaskBoardProps) {
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <Badge>
                         <Icon className="size-3" aria-hidden />
-                        {AREAS[task.area].label}
+                        {areas.label(task.area)}
                       </Badge>
                       {goal && (
                         <Badge tone="accent">
