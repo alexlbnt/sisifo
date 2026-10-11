@@ -7,8 +7,8 @@ const ctx: CaptureContext = {
   today: '2026-10-11', // domingo
   categories: [...defaultCategories(), { id: 'pets', label: 'Pets', types: ['expense'], icon: 'pet', color: 0, archived: false }],
   transactions: [
-    { id: 'x', title: 'Presente da mãe', amountCents: 5000, type: 'expense', category: 'other', date: '2026-09-01', createdAt: '' },
-    { id: 'y', title: 'Ração do Thor', amountCents: 9000, type: 'expense', category: 'pets', date: '2026-09-20', createdAt: '' },
+    { title: 'Presente da mãe', type: 'expense', category: 'other', date: '2026-09-01' },
+    { title: 'Ração do Thor', type: 'expense', category: 'pets', date: '2026-09-20' },
   ],
   areas: [...defaultAreas(), { id: 'work', label: 'Trabalho', icon: 'briefcase', archived: false }],
 };

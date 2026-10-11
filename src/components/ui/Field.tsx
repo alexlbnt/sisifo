@@ -7,7 +7,8 @@ import type {
 import { cn } from '@/lib/cn';
 
 const control = cn(
-  'w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-3',
+  // 16px no celular: o Safari do iPhone dá zoom em campos com fonte menor ao tocar.
+  'w-full rounded-lg border border-line bg-surface px-3 text-base text-ink placeholder:text-ink-3 sm:text-sm',
   'transition-colors focus:border-accent focus:outline-none aria-[invalid=true]:border-expense',
 );
 

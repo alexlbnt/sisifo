@@ -55,3 +55,16 @@ model PushSubscription {
 
   @@map("push_subscriptions")
 }
+
+/// Chave de acesso de um Atalho do iPhone (ou outra automação). Só o hash fica no banco.
+model ApiToken {
+  id         String    @id
+  /// Nome dado pela pessoa (ex.: "iPhone").
+  name       String
+  /// SHA-256 da chave. A chave em si só aparece uma vez, ao ser criada.
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  lastUsedAt DateTime? @db.Timestamptz(3)
+
+  @@map("api_tokens")
+}

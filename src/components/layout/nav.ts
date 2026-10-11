@@ -52,11 +52,9 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const SETTINGS_ITEM: NavItem = { to: '/settings', label: 'Configurações', icon: Settings };
 
-/** Barra inferior do celular: as 5 telas de uso diário. */
+/** Barra inferior do celular: as 3 telas de uso diário (com o botão + e "Mais" ao lado). */
 export const MOBILE_NAV: NavItem[] = [
   { to: '/', label: 'Hoje', icon: Mountain, end: true },
   { to: '/finance', label: 'Finanças', icon: Wallet },
   { to: '/personal/tasks', label: 'Tarefas', icon: ListTodo },
-  { to: '/personal/habits', label: 'Hábitos', icon: Flame },
-  { to: '/personal/training', label: 'Treino', icon: Dumbbell },
 ];

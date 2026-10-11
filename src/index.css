@@ -134,3 +134,29 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Janelas sobem de baixo no celular (folha), sem animação para quem prefere menos movimento. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (max-width: 639px) {
+  .sheet-in {
+    animation: sheet-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in {
+    animation: none;
+  }
+}
+
+/* App instalado: sem destaque cinza ao tocar e sem "puxar" a página inteira no iPhone. */
+@media (display-mode: standalone) {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+}

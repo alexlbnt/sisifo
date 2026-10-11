@@ -1,6 +1,8 @@
-import { CirclePlay, Clock, NotebookText, Pencil, Repeat, Target, Trash2 } from 'lucide-react';
-import { Badge, CheckCircle, IconButton } from '@/components/ui';
+import { CalendarArrowUp, Check, CirclePlay, Clock, NotebookText, Pencil, Repeat, Target, Trash2, Undo2 } from 'lucide-react';
+import { Badge, CheckCircle, IconButton, SwipeRow } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { addDaysISO, todayISO } from '@/lib/dates';
+import { haptic } from '@/lib/haptics';
 import { repeatLabel } from '../recurrence';
 import { usePersonalStore } from '../store';
 import type { Task } from '../types';
@@ -19,14 +21,25 @@ const PRIORITY_BAR = { high: 'bg-expense', medium: 'bg-warn', low: 'bg-line' } a
 export function TaskItem({ task, onEdit, onDelete, meta }: TaskItemProps) {
   const toggleTask = usePersonalStore((s) => s.toggleTask);
   const setTaskStatus = usePersonalStore((s) => s.setTaskStatus);
+  const moveTasksToDay = usePersonalStore((s) => s.moveTasksToDay);
   const goalTitle = usePersonalStore((s) =>
     task.link ? s.goals.find((g) => g.id === task.link?.goalId)?.title : undefined,
   );
   const done = task.status === 'done';
   const hasDetails = goalTitle || meta || task.status === 'doing' || task.time || task.repeat || task.notes;
+  const toggle = () => {
+    if (!done) haptic();
+    toggleTask(task.id);
+  };
+  // Adiar: para amanhã (ou, se a tarefa já é de outro dia, para o dia seguinte a hoje).
+  const postpone = () => moveTasksToDay([task.id], addDaysISO(task.date > todayISO() ? task.date : todayISO(), 1));
 
   return (
-    <li className="group relative flex items-center gap-3 px-5 py-2.5">
+    <SwipeRow
+      right={{ label: done ? 'Desmarcar' : 'Concluir', icon: done ? Undo2 : Check, tone: done ? 'accent' : 'good', onAction: toggle }}
+      left={done ? undefined : { label: 'Amanhã', icon: CalendarArrowUp, tone: 'warn', onAction: postpone }}
+    >
+    <div className="group relative flex items-center gap-3 px-5 py-2.5">
       {task.priority && !done && (
         <span
           className={cn('absolute top-2.5 bottom-2.5 left-2 w-1 rounded-full', PRIORITY_BAR[task.priority])}
@@ -36,7 +49,7 @@ export function TaskItem({ task, onEdit, onDelete, meta }: TaskItemProps) {
       )}
       <CheckCircle
         checked={done}
-        onChange={() => toggleTask(task.id)}
+        onChange={toggle}
         label={done ? `Desmarcar ${task.title}` : `Concluir ${task.title}`}
       />
       <div className="min-w-0 flex-1">
@@ -86,6 +99,7 @@ export function TaskItem({ task, onEdit, onDelete, meta }: TaskItemProps) {
           <IconButton icon={Trash2} label={`Excluir ${task.title}`} size="sm" onClick={() => onDelete(task)} />
         )}
       </div>
-    </li>
+    </div>
+    </SwipeRow>
   );
 }

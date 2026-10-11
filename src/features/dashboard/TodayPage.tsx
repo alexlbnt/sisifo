@@ -12,8 +12,9 @@ import {
   OctagonAlert,
   Plus,
   Target,
+  Undo2,
 } from 'lucide-react';
-import { Button, Card, CheckCircle, EmptyState, IconButton, Input, ProgressBar, Select } from '@/components/ui';
+import { Button, Card, CheckCircle, EmptyState, IconButton, Input, ProgressBar, Select, SwipeRow } from '@/components/ui';
 import { liquidBalance } from '@/features/finance/accounts';
 import { expenseCategoryOrder, useCategoryLookup } from '@/features/finance/categories';
 import { UpcomingRow } from '@/features/finance/components/ForecastCard';
@@ -41,6 +42,7 @@ import type { Area, WorkoutPlan } from '@/features/personal/types';
 import { currentFocus, reviewPending } from '@/features/review/summary';
 import { cn } from '@/lib/cn';
 import { currentMonthKey, daysBetween, todayISO } from '@/lib/dates';
+import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
 import { BoulderHero } from './BoulderHero';
 
@@ -185,12 +187,20 @@ export function TodayPage() {
               {dueHabits.map((h) => {
                 const checked = h.completions.includes(today);
                 const streak = computeStreak(h, today);
+                const toggle = () => {
+                  if (!checked) haptic();
+                  toggleHabitDay(h.id, today);
+                };
                 return (
-                  <li key={h.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <SwipeRow
+                    key={h.id}
+                    right={{ label: checked ? 'Desmarcar' : 'Feito', icon: checked ? Undo2 : Check, tone: checked ? 'accent' : 'good', onAction: toggle }}
+                  >
+                  <div className="flex items-center gap-3 px-5 py-2.5">
                     {h.kind !== 'quantity' && (
                       <CheckCircle
                         checked={checked}
-                        onChange={() => toggleHabitDay(h.id, today)}
+                        onChange={toggle}
                         label={checked ? `Desmarcar ${h.title}` : `Marcar ${h.title} como feito`}
                       />
                     )}
@@ -209,7 +219,8 @@ export function TodayPage() {
                       <Flame className={cn('size-3.5', streak.current > 0 && 'text-warn')} aria-hidden />
                       {streak.current}
                     </span>
-                  </li>
+                  </div>
+                  </SwipeRow>
                 );
               })}
             </ul>

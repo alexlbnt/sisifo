@@ -1,14 +1,18 @@
 import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Settings } from 'lucide-react';
-import { CaptureFab, CaptureSidebarButton, QuickCapture } from '@/features/capture/QuickCapture';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { CaptureSidebarButton, QuickCapture } from '@/features/capture/QuickCapture';
+import { useAppBadge } from '@/features/pwa/useAppBadge';
 import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { UpdateToast } from '@/features/pwa/UpdateToast';
 import { FirstLinkDialog } from '@/features/sync/FirstLinkDialog';
 import { SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
-import { MOBILE_NAV, NAV_GROUPS, SETTINGS_ITEM, type NavItem } from './nav';
+import { BottomNav } from './MobileNav';
+import { NAV_GROUPS, SETTINGS_ITEM, type NavItem } from './nav';
+import { usePullToRefresh, type PullState } from './usePullToRefresh';
 import { ThemeCycleButton, ThemeSelector } from './ThemeToggle';
 
 function SidebarLink({ item }: { item: NavItem }) {
@@ -79,36 +83,35 @@ function MobileHeader() {
   );
 }
 
-function BottomNav() {
+/** Indicador do "puxar para atualizar", logo abaixo do cabeçalho. */
+function PullIndicator({ state }: { state: PullState }) {
+  if (state.phase === 'idle') return null;
+  const offset = state.phase === 'pulling' ? state.distance : 56;
   return (
-    <nav
-      aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+    <div
+      className="pointer-events-none fixed inset-x-0 top-[calc(3.5rem+env(safe-area-inset-top))] z-20 flex justify-center lg:hidden"
+      style={{ transform: `translateY(${Math.min(offset, 72) - 40}px)` }}
+      role="status"
     >
-      {MOBILE_NAV.map((item) => {
-        const Icon = item.icon;
-        return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              cn(
-                'flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium',
-                isActive ? 'text-accent' : 'text-ink-3',
-              )
-            }
-          >
-            <Icon className="size-5" aria-hidden />
-            {item.label}
-          </NavLink>
-        );
-      })}
-    </nav>
+      <span className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink-2 shadow">
+        {state.phase === 'refreshing' ? (
+          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+        ) : (
+          <RefreshCw
+            className="size-3.5 transition-transform"
+            style={{ transform: state.phase === 'pulling' ? `rotate(${state.distance * 3}deg)` : undefined }}
+            aria-hidden
+          />
+        )}
+        {state.phase === 'pulling' ? (state.distance >= 72 ? 'Solte para atualizar' : 'Puxe para atualizar') : state.phase === 'refreshing' ? 'Sincronizando…' : state.text}
+      </span>
+    </div>
   );
 }
 
 export function AppLayout() {
+  useAppBadge();
+  const pull = usePullToRefresh();
   return (
     <div className="flex min-h-dvh">
       <Sidebar />
@@ -122,8 +125,8 @@ export function AppLayout() {
           </Suspense>
         </main>
       </div>
+      <PullIndicator state={pull} />
       <BottomNav />
-      <CaptureFab />
       <QuickCapture />
       <InstallBanner />
       <UpdateToast />

@@ -10,6 +10,7 @@ import { PRIORITY_LABELS } from '@/features/personal/tasks/TaskForm';
 import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { cn } from '@/lib/cn';
 import { relativeDay, todayISO } from '@/lib/dates';
+import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
 import { parseCapture, type CaptureGuess } from './parse';
 
@@ -36,21 +37,6 @@ function useCaptureShortcut() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [setOpen]);
-}
-
-/** Botão flutuante do celular (acima da barra inferior). */
-export function CaptureFab() {
-  const setOpen = useCaptureStore((s) => s.setOpen);
-  return (
-    <button
-      type="button"
-      onClick={() => setOpen(true)}
-      aria-label="Captura rápida"
-      className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 grid size-13 place-items-center rounded-full bg-accent text-accent-ink shadow-lg lg:hidden"
-    >
-      <Zap className="size-5" aria-hidden />
-    </button>
-  );
 }
 
 export function CaptureSidebarButton() {
@@ -123,6 +109,7 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
       });
       setSaved(`Tarefa "${guess.title}" adicionada para ${relativeDay(guess.date, today).toLowerCase()}.`);
     }
+    haptic();
     setText('');
     setForce(undefined);
     setCategoryOverride(null);

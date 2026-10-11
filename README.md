@@ -12,6 +12,8 @@ Painel pessoal para finanças, tarefas, metas, hábitos e treinos. É **local-fi
 - **Revisão semanal:** resumo da semana, o que deu certo, o que mudar e o foco da próxima.
 - **Captura rápida** (Ctrl+K, botão ⚡ no celular ou atalho do ícone): "café 8,50" vira despesa; "ligar pro banco amanhã às 14h !" vira tarefa.
 - **Notificações push:** resumo da manhã, contas a vencer, hábitos pendentes à noite e lembrete da revisão.
+- **Feito para o polegar no celular:** botão + no centro da barra (gasto rápido com teclado de calculadora, captura por texto ou voz, nova tarefa), deslizar nas linhas (concluir ou adiar), puxar para atualizar e janelas que sobem de baixo.
+- **Atalhos do iPhone:** registrar e ver o resumo do dia sem abrir o app, com dois toques nas costas do celular, pela Siri ou por um widget de Atalhos.
 
 ## Stack
 
@@ -108,6 +110,13 @@ O Sísifo pode ser instalado na tela inicial do celular. Ele abre em tela cheia 
 
 Configuração em `vite.config.ts` (`vite-plugin-pwa`). Os ícones estão em `public/` (`pwa-192.png`, `pwa-512.png`, `maskable-512.png`, `apple-touch-icon.png`). O código fica em `src/features/pwa/`.
 
+**No iPhone:**
+- O iOS ignora os atalhos do ícone; o acesso rápido fica no botão + da barra inferior.
+- Telas de abertura (claro e escuro) em `public/splash/`, com os `<link>` no `index.html`. Se trocar o logo ou as cores de fundo, rode `npm run splash`.
+- Campos com 16px no celular: abaixo disso, o Safari dá zoom ao tocar.
+- O número no ícone mostra o que falta hoje (iOS 16.4+, com as notificações permitidas).
+- Vibração ao concluir: no iPhone usa o interruptor do iOS 18 (`src/lib/haptics.ts`); em versões antigas, não vibra.
+
 > O service worker só roda no build de produção. Para testar localmente, use `npm run build && npm run preview`. No celular, a instalação exige HTTPS, ou seja, o deploy na Vercel.
 
 ## Sincronização e login
@@ -133,6 +142,16 @@ Precisam da sincronização ligada (é o servidor que sabe o que avisar). Cada a
 - **Noite:** hábitos que ainda faltam; aos domingos, a revisão semanal se ainda não foi feita.
 - **iPhone:** só funciona com o Sísifo instalado na tela de início (iOS 16.4+).
 - O service worker (e, portanto, o push) só existe no build de produção.
+
+## Atalhos do iPhone
+
+Rotas com chave (`Authorization: Bearer sis_...`), porque o app Atalhos não manda o cookie de sessão:
+
+- `POST /api/capture`: registra um lançamento ou uma tarefa a partir de uma frase (corpo JSON `{ "text": "café 8,50" }` ou texto puro). Usa o mesmo parser da captura rápida (`src/shared/capture.ts`).
+- `GET /api/summary`: saldo disponível, quanto dá para gastar hoje, o que falta e o que vence.
+- Com `?format=text`, a resposta é texto puro, pronta para "Mostrar Notificação"; `?tz=` define o fuso (padrão: São Paulo).
+
+As chaves são criadas e revogadas em **Configurações → Atalhos do iPhone**, que também traz o passo a passo dos atalhos e do Toque Traseiro (Ajustes → Acessibilidade → Toque → Tocar Atrás). O banco guarda só o hash (tabela `api_tokens`). Itens criados por essas rotas entram na sincronização e aparecem nos aparelhos na próxima rodada.
 
 ## Deploy na Vercel
 

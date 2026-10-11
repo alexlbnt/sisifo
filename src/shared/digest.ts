@@ -3,6 +3,10 @@
  * sincronizados. Também usado pela API: só pacotes e imports relativos `.js`.
  */
 
+import { addDays, isMonthDay, mondayOf, weekday } from './dates.js';
+
+export { localDate } from './dates.js';
+
 export type NotifySlot = 'morning' | 'evening';
 
 export interface NotifyPrefs {
@@ -30,36 +34,8 @@ export interface Notification {
   url: string;
   /** Notificações com a mesma tag substituem a anterior. */
   tag: string;
-}
-
-/* ───────── Datas (sem date-fns: a conta é simples e roda no servidor) ───────── */
-
-/** "Hoje" no fuso do aparelho, como YYYY-MM-DD. */
-export function localDate(now: Date, timeZone: string): string {
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  } catch {
-    return now.toISOString().slice(0, 10);
-  }
-}
-
-const toUTC = (iso: string) => new Date(`${iso}T12:00:00Z`);
-const fromUTC = (d: Date) => d.toISOString().slice(0, 10);
-export const addDays = (iso: string, days: number) => fromUTC(new Date(toUTC(iso).getTime() + days * 86_400_000));
-export const weekday = (iso: string) => toUTC(iso).getUTCDay();
-
-function lastDayOfMonth(iso: string): number {
-  const d = toUTC(iso);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
-}
-
-/** O dia `day` cai em `iso`? (dia 31 em mês de 30 dias cai no dia 30). */
-function isMonthDay(iso: string, day: number): boolean {
-  return Number(iso.slice(8, 10)) === Math.min(day, lastDayOfMonth(iso));
-}
-
-function mondayOf(iso: string): string {
-  return addDays(iso, -((weekday(iso) + 6) % 7));
+  /** Número no ícone do app (o que falta hoje). */
+  badge?: number;
 }
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -193,6 +169,7 @@ export function buildNotifications(
         body: `Hoje: ${parts.join(' · ')}.${timed ? ` Primeiro compromisso: ${timed.title} às ${timed.time}.` : ''}`,
         url: '/',
         tag: 'sisifo-morning',
+        badge: tasks.length + habits.length,
       });
     }
     if (billsToday.length || billsTomorrow.length) {
@@ -214,6 +191,7 @@ export function buildNotifications(
         body: `${list(habits.map((h) => h.title))}. Ainda dá tempo.`,
         url: '/personal/habits',
         tag: 'sisifo-evening',
+        badge: habits.length + data.tasks.filter((t) => t.date === today && t.status !== 'done').length,
       });
     }
     // Domingo: revisão da semana que termina hoje.

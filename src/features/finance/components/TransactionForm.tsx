@@ -2,7 +2,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight } from 'lucide-react';
 import { Button, Field, Input, Modal, SegmentedControl, Select } from '@/components/ui';
 import { todayISO } from '@/lib/dates';
-import { centsToInput, formatBRL, parseBRL } from '@/lib/money';
+import { centsToInput, formatBRL, parseAmount } from '@/lib/money';
 import { selectableAccounts, useAccounts } from '../accountHooks';
 import { DEFAULT_ACCOUNT_ID, splitInstallments } from '../accounts';
 import { categoriesFor, defaultCategoryFor, TRANSFER_CATEGORY, useCategories } from '../categories';
@@ -63,7 +63,7 @@ function TransactionFormInner({ onClose, transaction, defaultType = 'expense', d
   const canSplit = !editing && type === 'expense' && account?.kind === 'credit';
   const cashType: CashType = type === 'income' ? 'income' : 'expense';
   const categories = categoriesFor(allCategories, cashType, transaction?.category);
-  const parsedAmount = parseBRL(amount);
+  const parsedAmount = parseAmount(amount);
 
   const changeType = (next: TransactionType) => {
     setType(next);
@@ -75,10 +75,10 @@ function TransactionFormInner({ onClose, transaction, defaultType = 'expense', d
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const cents = parseBRL(amount);
+    const cents = parseAmount(amount);
     const nextErrors: Errors = {};
     if (!title.trim()) nextErrors.title = 'Dê um nome ao lançamento.';
-    if (cents === null || cents <= 0) nextErrors.amount = 'Informe um valor maior que zero, ex.: 125,90.';
+    if (cents === null || cents <= 0) nextErrors.amount = 'Informe um valor maior que zero, ex.: 125,90 (ou uma soma, 12+8,50).';
     if (!date) nextErrors.date = 'Escolha a data.';
     if (isTransfer && (!toAccountId || toAccountId === accountId)) {
       nextErrors.account = 'Escolha contas diferentes de origem e destino.';
@@ -158,7 +158,7 @@ function TransactionFormInner({ onClose, transaction, defaultType = 'expense', d
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               inputMode="decimal"
-              placeholder="0,00"
+              placeholder="0,00 ou 12+8,50"
               aria-invalid={Boolean(errors.amount)}
               className="tabular"
             />

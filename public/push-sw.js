@@ -9,6 +9,10 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' };
   }
   const title = data.title || 'Sísifo';
+  // Número no ícone do app com o que falta hoje (iOS 16.4+ e Android).
+  if (typeof data.badge === 'number' && self.navigator.setAppBadge) {
+    self.navigator.setAppBadge(data.badge).catch(() => {});
+  }
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',

@@ -6,6 +6,7 @@ import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
 import { NotificationsCard } from '@/features/notifications/NotificationsCard';
 import { InstallCard } from '@/features/pwa/InstallCard';
+import { ShortcutsCard } from '@/features/shortcuts/ShortcutsCard';
 import { useAuthStore } from '@/features/sync/authStore';
 import { SyncCard } from '@/features/sync/SyncCard';
 import { clearAllData, downloadBackup, importBackup, restoreSampleData } from './backup';
@@ -40,6 +41,8 @@ export function SettingsPage() {
         <SyncCard />
 
         <NotificationsCard />
+
+        <ShortcutsCard />
 
         <InstallCard />
 

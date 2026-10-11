@@ -13,4 +13,5 @@ export { PageHeader } from './PageHeader';
 export { ProgressBar } from './ProgressBar';
 export { SectionTabs } from './SectionTabs';
 export { SegmentedControl } from './SegmentedControl';
+export { SwipeRow, type SwipeAction } from './SwipeRow';
 export { WeekdayPicker } from './WeekdayPicker';

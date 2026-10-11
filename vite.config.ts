@@ -65,6 +65,8 @@ export default defineConfig({
       workbox: {
         // App shell completo em cache: abre sem internet (os dados já são locais).
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // As telas de abertura do iPhone são lidas pelo sistema ao instalar; não precisam ir para o cache.
+        globIgnores: ['splash/**'],
         navigateFallback: '/index.html',
         // A API nunca passa pelo cache: dados pessoais e sessão vão sempre à rede.
         navigateFallbackDenylist: [/^\/api\//],

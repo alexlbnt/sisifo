@@ -40,3 +40,22 @@ export function parseBRL(input: string): number | null {
 export function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',');
 }
+
+/**
+ * Como `parseBRL`, mas aceita somas e subtrações: "12+8,50-3" → 1750.
+ * Útil para lançar a conta dividida ou vários itens de uma vez.
+ */
+export function parseAmount(input: string): number | null {
+  const cleaned = input.replace(/[R$\s]/g, '').replace(/−/g, '-');
+  if (!cleaned) return null;
+  const parts = cleaned.match(/[+-]?[^+-]+/g);
+  if (!parts || parts.join('') !== cleaned) return null;
+  let total = 0;
+  for (const part of parts) {
+    const negative = part.startsWith('-');
+    const cents = parseBRL(part.replace(/^[+-]/, ''));
+    if (cents === null) return null;
+    total += negative ? -cents : cents;
+  }
+  return total;
+}
