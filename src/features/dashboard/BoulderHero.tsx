@@ -5,7 +5,8 @@ interface BoulderHeroProps {
   total: number;
 }
 
-// Geometria da encosta no viewBox 640x124.
+// Geometria da encosta no viewBox 640x124, com folga acima (TOP_ROOM) para a pedra no topo não ser cortada.
+const TOP_ROOM = 24;
 const START = { x: 24, y: 112 };
 const END = { x: 600, y: 32 };
 const RADIUS = 17;
@@ -54,8 +55,8 @@ export function BoulderHero({ done, total }: BoulderHeroProps) {
       <p className="mt-2 max-w-md text-sm text-ink-2">{caption(done, total)}</p>
 
       <svg
-        viewBox="0 0 640 124"
-        className="mt-2 -mb-px block w-full"
+        viewBox={`0 ${-TOP_ROOM} 640 ${124 + TOP_ROOM}`}
+        className="-mb-px block w-full"
         role="img"
         aria-label={`${Math.round(t * 100)}% do dia concluído`}
       >
