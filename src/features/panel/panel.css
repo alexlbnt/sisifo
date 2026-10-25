@@ -5,7 +5,13 @@
  * Tailwind (rem) acompanha. Os números grandes usam clamp() com vw e vh juntos
  * para caber nas duas orientações. Só opacity/transform nas transições: o
  * aparelho é antigo.
+ *
+ * Identidade: a encosta de Sísifo. No foco a pedra sobe; na pausa ela rola de
+ * volta. É o único elemento que se mexe sozinho; o resto fica quieto.
  */
+
+/* Eixo de largura da Bricolage: números altos e estreitos, maiores sem ocupar mais largura. */
+@import '@fontsource-variable/bricolage-grotesque/wdth.css';
 
 html {
   font-size: clamp(16px, 10px + 1.6vmin, 24px);
@@ -21,31 +27,29 @@ body {
   -webkit-touch-callout: none;
 }
 
-/* Mais contraste que o app: o painel é lido a dois metros. */
+/* Mais contraste que o app (o painel é lido a dois metros) e cores minerais por etapa. */
 .panel {
   --ink-2: #333c38;
   --ink-3: #56605b;
-  --focus: #c2412d;
-  --focus-soft: #fbe4df;
-  --short: #1b7349;
-  --short-soft: #dff0e6;
-  --long: #2e4a9e;
-  --long-soft: #e2e7f6;
+  /* Foco: lápis-lazúli, o azul da marca. Pausas: musgo e ocre. */
+  --focus: #2e4a9e;
+  --focus-soft: #dfe5f6;
+  --short: #4d7c3c;
+  --short-soft: #e2eedb;
+  --long: #9a6a10;
+  --long-soft: #f5ead2;
 }
 
 .dark .panel {
-  --bg: #000000;
-  --surface: #0f1311;
-  --surface-2: #171c1a;
-  --ink: #f4f7f5;
+  --ink: #f1f4f2;
   --ink-2: #c3ccc7;
-  --ink-3: #9aa5a0;
-  --focus: #ff8a73;
-  --focus-soft: #3d1d17;
-  --short: #6ad3a0;
-  --short-soft: #13301f;
-  --long: #9fb1f5;
-  --long-soft: #1d2442;
+  --ink-3: #96a19c;
+  --focus: #93a6ef;
+  --focus-soft: #1f2744;
+  --short: #a3cf86;
+  --short-soft: #1c2b17;
+  --long: #e0b354;
+  --long-soft: #33280f;
 }
 
 .panel-shell {
@@ -98,34 +102,17 @@ body {
   }
 }
 
-/* ───────── Pomodoro ───────── */
-
-.pomo-layout {
-  display: grid;
-  height: 100%;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-}
-@media (orientation: landscape) {
-  .pomo-layout {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-}
-
-.pomo-timer {
+/* Números de painel: Bricolage condensada e pesada. */
+.numerals {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-stretch: 75%;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-  font-size: clamp(3.5rem, min(24vw, 26vh), 14rem);
+  letter-spacing: -0.01em;
+  line-height: 0.9;
 }
-@media (orientation: landscape) {
-  .pomo-timer {
-    font-size: clamp(3rem, min(17vw, 38vh), 14rem);
-  }
-}
+
+/* ───────── Pomodoro ───────── */
 
 .phase-focus {
   --phase: var(--focus);
@@ -140,34 +127,63 @@ body {
   --phase-soft: var(--long-soft);
 }
 
-.pomo-bar {
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--phase-soft);
-  overflow: hidden;
-}
-.pomo-bar > span {
-  display: block;
+.pomo-scene {
+  display: grid;
   height: 100%;
-  background: var(--phase);
-  transform-origin: left;
-  /* Anda 1s por vez, sem animação contínua. */
+  gap: clamp(0.5rem, 1.6vh, 1rem) 1.5rem;
+  grid-template-areas: 'head' 'timer' 'hill' 'info';
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+@media (orientation: landscape) {
+  .pomo-scene {
+    grid-template-areas: 'head head' 'timer info' 'hill hill';
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+}
+
+.pomo-timer {
+  font-size: clamp(4rem, min(40vw, 24vh), 15rem);
+}
+@media (orientation: landscape) {
+  .pomo-timer {
+    font-size: clamp(3.5rem, min(16vw, 32vh), 15rem);
+  }
+}
+
+/* ───────── Encosta ───────── */
+
+.hill-ground {
+  fill: var(--phase-soft, var(--surface-2));
+}
+.hill-trail {
+  stroke: var(--phase, var(--accent));
+  /* Linha inteira com pathLength=1: o deslocamento do traço revela o caminho já subido. */
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset 1s linear;
+}
+.hill-stone {
+  fill: var(--phase, var(--accent));
+  /* Anda um passo por segundo, sem animação contínua. */
   transition: transform 1s linear;
+}
+.hill-grain {
+  stroke: var(--bg);
+  opacity: 0.5;
+}
+.hill-grain-dot {
+  fill: var(--bg);
+  opacity: 0.45;
 }
 
 /* ───────── Relógio ───────── */
 
 .clock-time {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  font-size: clamp(4rem, min(30vw, 34vh), 20rem);
+  font-size: clamp(5rem, min(42vw, 30vh), 22rem);
 }
 @media (orientation: landscape) {
   .clock-time {
-    font-size: clamp(4rem, min(24vw, 52vh), 20rem);
+    font-size: clamp(5rem, min(30vw, 46vh), 22rem);
   }
 }
 
@@ -175,16 +191,19 @@ body {
   display: flex;
   height: 100%;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  text-align: center;
+  gap: 1.25rem;
 }
 @media (orientation: landscape) {
   .clock-layout {
-    flex-direction: row;
-    gap: 3rem;
-    text-align: left;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 2.5rem;
+  }
+  .clock-layout > .hill-row {
+    grid-column: 1 / -1;
   }
 }
 
@@ -225,7 +244,8 @@ body {
   .panel-fade {
     animation: none;
   }
-  .pomo-bar > span {
+  .hill-stone,
+  .hill-trail {
     transition: none;
   }
 }

@@ -20,8 +20,8 @@ export function useTodayAgenda(today: ISODate): AgendaItem[] {
 
 interface NextUpProps {
   today: ISODate;
-  /** compact: uma linha, para o relógio. */
-  variant?: 'card' | 'compact';
+  /** card: destaque da Agenda. plain: texto solto, ao lado do Pomodoro. compact: uma linha, no relógio. */
+  variant?: 'card' | 'plain' | 'compact';
   className?: string;
 }
 
@@ -37,44 +37,41 @@ export function NextUp({ today, variant = 'card', className }: NextUpProps) {
       <p className={cn('flex items-center gap-2 text-ink-2', className)}>
         <CalendarClock className="size-[1.2em] shrink-0" aria-hidden />
         <span className="line-clamp-2">
-          {top.slot === 'now' ? 'Agora' : hhmm(top.item.start)} · {top.item.title}
+          {top.slot === 'now' ? 'Agora' : hhmm(top.item.start)}: {top.item.title}
         </span>
       </p>
     );
   }
 
+  // "Próximo às 19:00, em 5h 31min" / "Agora, termina em 20 min".
+  const when = top
+    ? top.slot === 'now'
+      ? `Agora, termina ${untilLabel(top.item.end - now)}`
+      : `Próximo às ${hhmm(top.item.start)}, ${untilLabel(top.item.start - now)}`
+    : null;
+
   return (
     <section
+      aria-label="Próximo compromisso"
       className={cn(
-        'rounded-2xl border p-4',
-        top?.slot === 'now' ? 'border-accent bg-accent-soft' : 'border-line bg-surface',
+        variant === 'card' && 'rounded-2xl border p-4',
+        variant === 'card' && (top?.slot === 'now' ? 'border-accent bg-accent-soft' : 'border-line bg-surface'),
         className,
       )}
-      aria-label="Próximo compromisso"
     >
-      <p className="text-sm font-semibold tracking-wide text-ink-3 uppercase">
-        {top?.slot === 'now' ? 'Agora' : 'Próximo'}
-      </p>
       {top ? (
         <>
-          <p className="mt-1 line-clamp-2 text-xl leading-tight font-semibold">{top.item.title}</p>
-          <p className="mt-1 text-base text-ink-2 tabular">
-            {hhmm(top.item.start)}
-            {top.item.end > top.item.start && ` – ${hhmm(top.item.end)}`}
-            <span className="text-ink-3">
-              {' · '}
-              {top.slot === 'now' ? `termina ${untilLabel(top.item.end - now)}` : untilLabel(top.item.start - now)}
-            </span>
-          </p>
+          <p className={cn('text-base', top.slot === 'now' ? 'font-semibold text-accent' : 'text-ink-3')}>{when}</p>
+          <p className="mt-0.5 line-clamp-2 text-[1.375rem] leading-tight font-semibold">{top.item.title}</p>
           {top.item.location && (
-            <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-ink-3">
+            <p className="mt-1 flex items-center gap-1.5 truncate text-base text-ink-3">
               <MapPin className="size-4 shrink-0" aria-hidden />
               {top.item.location}
             </p>
           )}
         </>
       ) : (
-        <p className="mt-1 text-lg text-ink-2">Nada mais na agenda hoje.</p>
+        <p className="text-lg text-ink-3">Nada mais na agenda hoje.</p>
       )}
     </section>
   );
