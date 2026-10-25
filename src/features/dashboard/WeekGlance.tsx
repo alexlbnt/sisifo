@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Check, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -10,6 +10,8 @@ import { dayLoad, HEAVY_SCORE, loadScore, type DayLoad } from '@/features/person
 import type { AgendaEvent } from '@/shared/agenda';
 import { dayItems, ridgeLevels, ridgePath, type GlanceItem } from './weekRidge';
 
+/** Dias abertos no celular antes de "Mostrar os 7 dias". */
+const MOBILE_DAYS = 3;
 /** Itens visíveis por dia antes do "+N". */
 const MAX_ITEMS = { column: 4, row: 5 } as const;
 /** Geometria da serra (viewBox); esticada na largura, a altura fica fixa. */
@@ -136,8 +138,9 @@ function Extras({ day, limit, className }: { day: GlanceDay; limit: number; clas
  * Os próximos 7 dias de relance, na tela Hoje: a serra mostra quais dias pesam,
  * e embaixo de cada pico vêm os compromissos, tarefas com horário e treinos.
  */
-export function WeekGlance({ today }: { today: ISODate }) {
+export function WeekGlance({ today, className }: { today: ISODate; className?: string }) {
   const days = useGlanceDays(today);
+  const [allDays, setAllDays] = useState(false);
   const heavy = days.filter((d) => d.load.heavy).map((d) => dayWord(d.date, today));
   const events = days.reduce((n, d) => n + d.items.filter((i) => i.kind === 'event').length, 0);
   const trainings = days.reduce((n, d) => n + d.items.filter((i) => i.kind === 'training' && !i.done).length, 0);
@@ -148,7 +151,7 @@ export function WeekGlance({ today }: { today: ISODate }) {
   ].filter(Boolean);
 
   return (
-    <section aria-label="Próximos 7 dias" className="overflow-hidden rounded-2xl border border-line bg-surface">
+    <section aria-label="Próximos 7 dias" className={cn('overflow-hidden rounded-2xl border border-line bg-surface', className)}>
       <header className="flex items-start justify-between gap-3 px-5 pt-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold">Próximos 7 dias</h2>
@@ -217,7 +220,7 @@ export function WeekGlance({ today }: { today: ISODate }) {
           ))}
         </ol>
         <ol className="divide-y divide-line">
-          {days.map((day) => {
+          {(allDays ? days : days.slice(0, MOBILE_DAYS)).map((day) => {
             const isToday = day.date === today;
             const empty = !day.items.length && !day.untimedTasks;
             return (
@@ -249,6 +252,14 @@ export function WeekGlance({ today }: { today: ISODate }) {
             );
           })}
         </ol>
+        <button
+          type="button"
+          onClick={() => setAllDays((v) => !v)}
+          aria-expanded={allDays}
+          className="min-h-12 w-full border-t border-line text-sm font-medium text-accent"
+        >
+          {allDays ? 'Mostrar só os próximos 3 dias' : 'Mostrar os 7 dias'}
+        </button>
       </div>
     </section>
   );

@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CalendarClock,
   Check,
-  ClipboardCheck,
   Compass,
   Flame,
   ListTodo,
@@ -37,7 +36,7 @@ import {
 import { usePersonalStore } from '@/features/personal/store';
 import { TaskItem } from '@/features/personal/tasks/TaskItem';
 import type { Area, WorkoutPlan } from '@/features/personal/types';
-import { currentFocus, reviewPending } from '@/features/review/summary';
+import { currentFocus } from '@/features/review/summary';
 import { cn } from '@/lib/cn';
 import { currentMonthKey, daysBetween, todayISO } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
@@ -71,7 +70,6 @@ export function TodayPage() {
   const todaySessions = sessions.filter((s) => s.date === today);
   const planDone = (p: WorkoutPlan) => todaySessions.some((s) => s.planId === p.id);
   const focus = currentFocus(reviews, today);
-  const showReviewReminder = reviewPending(reviews, today);
 
   const total = todayTasks.length + dueHabits.length + todayPlans.length;
   const done =
@@ -90,38 +88,21 @@ export function TodayPage() {
     <div className="flex flex-col gap-4">
       <BoulderHero done={done} total={total} />
 
-      {(focus || showReviewReminder) && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {focus && (
-            <div className="flex items-start gap-3 rounded-2xl border border-line bg-accent-soft/50 px-4 py-3">
-              <Compass className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-ink-3">Foco da semana</p>
-                <p className="text-sm font-medium text-ink">{focus.focus}</p>
-              </div>
-            </div>
-          )}
-          {showReviewReminder && (
-            <Link
-              to="/review"
-              className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 hover:bg-surface-2"
-            >
-              <ClipboardCheck className="size-5 shrink-0 text-accent" aria-hidden />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">Hora da revisão semanal</span>
-                <span className="text-xs text-ink-3">5 minutos para fechar a semana e escolher o foco da próxima.</span>
-              </span>
-            </Link>
-          )}
+      {focus && (
+        <div className="flex items-start gap-3 rounded-2xl border border-line bg-accent-soft/50 px-4 py-3">
+          <Compass className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-ink-3">Foco da semana</p>
+            <p className="text-sm font-medium text-ink">{focus.focus}</p>
+          </div>
         </div>
       )}
 
-      <WeekGlance today={today} />
-
       {/*
-        Ordem de uso no dia. No celular: tarefas, treino, hábitos, dinheiro, metas.
-        No computador, o "dense" sobe Hábitos e Dinheiro para a terceira coluna,
-        ao lado de Tarefas e Treino, e Metas fica numa faixa inteira.
+        Ordem de uso no dia. No celular: tarefas, treino, próximos 7 dias, hábitos,
+        dinheiro, metas. No computador, o "dense" sobe Hábitos e Dinheiro para a
+        terceira coluna, ao lado de Tarefas e Treino; a semana e as metas ficam em
+        faixas inteiras.
       */}
       <div className="grid gap-4 lg:grid-flow-row-dense lg:grid-cols-3 [&>*]:min-w-0">
         <Card
@@ -182,6 +163,8 @@ export function TodayPage() {
         </Card>
 
         <TrainingCard today={today} className="lg:col-span-2" />
+
+        <WeekGlance today={today} className="lg:col-span-3" />
 
         <Card
           title="Hábitos"
