@@ -17,6 +17,7 @@ import { ClockView } from './tabs/ClockView';
 import { PomodoroTab } from './tabs/PomodoroTab';
 import { TasksTab } from './tabs/TasksTab';
 import { useAgendaRefresh } from './useAgendaRefresh';
+import { useFreeRotation } from './useFreeRotation';
 import { useNow } from './useNow';
 import { useWakeLock } from './useWakeLock';
 import { useWeatherRefresh } from './weather';
@@ -111,6 +112,7 @@ function NavButton({ icon: Icon, label, active, onClick }: { icon: LucideIcon; l
 
 function PanelShell() {
   useWakeLock();
+  useFreeRotation();
   useWeatherRefresh();
   const minute = useNow(60_000);
   const today = toISODate(new Date(minute));

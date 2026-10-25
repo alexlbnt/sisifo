@@ -3,6 +3,7 @@ import type { ISODate } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 import { usePersonalStore } from '@/features/personal/store';
 import { unlockAudio } from '../alarm';
+import { ClockStrip } from '../components/ClockStrip';
 import { NextUp } from '../components/NextUp';
 import { minutesLabel } from '../format';
 import { usePanelStore } from '../panelStore';
@@ -92,6 +93,7 @@ export function PomodoroTab({ today, onPickTask }: { today: ISODate; onPickTask:
       </section>
 
       <aside className="flex min-h-0 flex-col justify-center gap-3">
+        <ClockStrip />
         <NextUp today={today} />
 
         <button
