@@ -12,16 +12,23 @@ export interface DayLoad {
 }
 
 /** Limites de um dia cheio (ajustados para um dia de semana comum). */
-const HEAVY = { tasks: 6, hours: 6, score: 8 } as const;
+const HEAVY = { tasks: 6, hours: 6 } as const;
+
+/** Peso do dia: uma hora e meia de compromisso pesa como uma tarefa; um treino, como uma. */
+export function loadScore(load: Pick<DayLoad, 'openTasks' | 'busyHours' | 'trainings'>): number {
+  return load.openTasks + load.busyHours / 1.5 + load.trainings;
+}
+
+/** Pontuação a partir da qual o dia é cheio. */
+export const HEAVY_SCORE = 8;
 
 export function dayLoad(openTasks: number, busyHours: number, trainings: number): DayLoad {
-  // Uma hora e meia de compromisso pesa como uma tarefa; um treino, como uma.
-  const score = openTasks + busyHours / 1.5 + trainings;
+  const score = loadScore({ openTasks, busyHours, trainings });
   return {
     openTasks,
     busyHours,
     trainings,
-    heavy: openTasks >= HEAVY.tasks || busyHours >= HEAVY.hours || score >= HEAVY.score,
+    heavy: openTasks >= HEAVY.tasks || busyHours >= HEAVY.hours || score >= HEAVY_SCORE,
   };
 }
 

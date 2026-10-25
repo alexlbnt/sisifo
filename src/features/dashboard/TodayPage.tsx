@@ -45,6 +45,7 @@ import { formatBRL } from '@/lib/money';
 import { StalledTasks } from '@/features/personal/tasks/StalledTasks';
 import { BoulderHero } from './BoulderHero';
 import { TodayAgenda } from './TodayAgenda';
+import { WeekGlance } from './WeekGlance';
 import { TrainingCard } from './TrainingCard';
 
 export function TodayPage() {
@@ -115,12 +116,14 @@ export function TodayPage() {
         </div>
       )}
 
+      <WeekGlance today={today} />
+
       {/*
         Ordem de uso no dia. No celular: tarefas, treino, hábitos, dinheiro, metas.
         No computador, o "dense" sobe Hábitos e Dinheiro para a terceira coluna,
         ao lado de Tarefas e Treino, e Metas fica numa faixa inteira.
       */}
-      <div className="grid gap-4 lg:grid-flow-row-dense lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-flow-row-dense lg:grid-cols-3 [&>*]:min-w-0">
         <Card
           title="Tarefas de hoje"
           flush
