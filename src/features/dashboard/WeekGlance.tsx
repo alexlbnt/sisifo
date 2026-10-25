@@ -10,8 +10,8 @@ import { dayLoad, HEAVY_SCORE, loadScore, type DayLoad } from '@/features/person
 import type { AgendaEvent } from '@/shared/agenda';
 import { dayItems, ridgeLevels, ridgePath, type GlanceItem } from './weekRidge';
 
-/** Dias abertos no celular antes de "Mostrar os 7 dias". */
-const MOBILE_DAYS = 3;
+/** Dias abertos no celular com o bloco recolhido: só hoje. */
+const MOBILE_DAYS = 1;
 /** Itens visíveis por dia antes do "+N". */
 const MAX_ITEMS = { column: 4, row: 5 } as const;
 /** Geometria da serra (viewBox); esticada na largura, a altura fica fixa. */
@@ -258,7 +258,7 @@ export function WeekGlance({ today, className }: { today: ISODate; className?: s
           aria-expanded={allDays}
           className="min-h-12 w-full border-t border-line text-sm font-medium text-accent"
         >
-          {allDays ? 'Mostrar só os próximos 3 dias' : 'Mostrar os 7 dias'}
+          {allDays ? 'Mostrar só hoje' : 'Mostrar os 7 dias'}
         </button>
       </div>
     </section>
