@@ -139,22 +139,22 @@ export function ProgressCard() {
           </Select>
         </div>
 
-        <dl className="grid grid-cols-3 gap-3">
+        <dl className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
           <div>
             <dt className="text-[13px] text-ink-2">Recorde</dt>
-            <dd className="font-display text-base font-semibold whitespace-nowrap tabular sm:text-lg">{recordText(selected)}</dd>
+            <dd className="font-display text-sm font-semibold whitespace-nowrap tabular min-[400px]:text-base sm:text-lg">{recordText(selected)}</dd>
             <dd className="text-xs text-ink-3">{fmt.short(selected.bestLoad?.date ?? selected.bestReps.date)}</dd>
           </div>
           {selected.best1RM && (
             <div>
               <dt className="text-[13px] text-ink-2">1RM estimado</dt>
-              <dd className="font-display text-base font-semibold whitespace-nowrap tabular sm:text-lg">{kg(selected.best1RM.value)}</dd>
+              <dd className="font-display text-sm font-semibold whitespace-nowrap tabular min-[400px]:text-base sm:text-lg">{kg(selected.best1RM.value)}</dd>
               <dd className="text-xs text-ink-3">{fmt.short(selected.best1RM.date)}</dd>
             </div>
           )}
           <div>
             <dt className="text-[13px] text-ink-2">Sessões</dt>
-            <dd className="font-display text-base font-semibold whitespace-nowrap tabular sm:text-lg">{selected.sessions}</dd>
+            <dd className="font-display text-sm font-semibold whitespace-nowrap tabular min-[400px]:text-base sm:text-lg">{selected.sessions}</dd>
             <dd className="text-xs text-ink-3">última em {fmt.short(selected.lastDate)}</dd>
           </div>
         </dl>

@@ -6,7 +6,6 @@ import {
   Check,
   ClipboardCheck,
   Compass,
-  Dumbbell,
   Flame,
   ListTodo,
   OctagonAlert,
@@ -36,17 +35,15 @@ import {
   tasksForDay,
 } from '@/features/personal/selectors';
 import { usePersonalStore } from '@/features/personal/store';
-import { SessionForm } from '@/features/personal/training/SessionForm';
 import { TaskItem } from '@/features/personal/tasks/TaskItem';
 import type { Area, WorkoutPlan } from '@/features/personal/types';
-import { useRunStore } from '@/features/personal/training/runStore';
-import { ActiveWorkoutBanner, useStartWorkout } from '@/features/personal/training/StartWorkout';
 import { currentFocus, reviewPending } from '@/features/review/summary';
 import { cn } from '@/lib/cn';
 import { currentMonthKey, daysBetween, todayISO } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
 import { BoulderHero } from './BoulderHero';
+import { TrainingCard } from './TrainingCard';
 
 export function TodayPage() {
   const today = todayISO();
@@ -63,9 +60,6 @@ export function TodayPage() {
   const areaLookup = useAreaLookup();
   const [draft, setDraft] = useState('');
   const [draftArea, setDraftArea] = useState<Area>(() => defaultAreaFor(areas));
-  const [sessionPlan, setSessionPlan] = useState<WorkoutPlan | null>(null);
-  const startFromPlan = useRunStore((s) => s.startFromPlan);
-  const { begin: beginWorkout, dialog: startDialog } = useStartWorkout();
 
   const todayTasks = useMemo(() => sortTasks(tasksForDay(tasks, today)), [tasks, today]);
   const overdue = useMemo(() => overdueTasks(tasks, today), [tasks, today]);
@@ -119,7 +113,12 @@ export function TodayPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/*
+        Ordem de uso no dia. No celular: tarefas, treino, hábitos, dinheiro, metas.
+        No computador, o "dense" sobe Hábitos e Dinheiro para a terceira coluna,
+        ao lado de Tarefas e Treino, e Metas fica numa faixa inteira.
+      */}
+      <div className="grid gap-4 lg:grid-flow-row-dense lg:grid-cols-3">
         <Card
           title="Tarefas de hoje"
           flush
@@ -164,7 +163,7 @@ export function TodayPage() {
               placeholder="Adicionar tarefa para hoje"
               aria-label="Nova tarefa para hoje"
             />
-            <Select aria-label="Área" value={draftArea} onChange={(e) => setDraftArea(e.target.value as Area)} className="w-36 shrink-0">
+            <Select aria-label="Área" value={draftArea} onChange={(e) => setDraftArea(e.target.value as Area)} className="w-28 shrink-0 sm:w-36">
               {selectableAreas(areas, draftArea).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
@@ -174,6 +173,8 @@ export function TodayPage() {
             <IconButton icon={Plus} label="Adicionar tarefa" type="submit" disabled={!draft.trim()} className="border border-line" />
           </form>
         </Card>
+
+        <TrainingCard today={today} className="lg:col-span-2" />
 
         <Card
           title="Hábitos"
@@ -231,65 +232,11 @@ export function TodayPage() {
           )}
         </Card>
 
-        <Card
-          title="Treino de hoje"
-          flush
-          action={
-            <Link to="/personal/training" className="text-sm font-medium text-accent hover:underline">
-              Semana
-            </Link>
-          }
-        >
-          <ActiveWorkoutBanner className="mx-5 mb-2" />
-          {todayPlans.length === 0 && todaySessions.length === 0 ? (
-            <EmptyState icon={Dumbbell} title="Dia de descanso" text="Nada previsto na divisão para hoje." className="py-6" />
-          ) : (
-            <ul className="divide-y divide-line pb-2">
-              {todayPlans.map((p) => {
-                const ok = planDone(p);
-                return (
-                  <li key={p.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block truncate text-sm', ok && 'text-ink-3')}>{p.label}</span>
-                      <span className="text-xs text-ink-3">{p.durationMin} min previstos</span>
-                    </span>
-                    {ok ? (
-                      <span className="flex items-center gap-1 text-sm font-medium text-income">
-                        <Check className="size-4" aria-hidden /> Feito
-                      </span>
-                    ) : p.exercises?.length ? (
-                      <Button size="sm" onClick={() => beginWorkout(() => startFromPlan(p))}>
-                        Começar
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="secondary" onClick={() => setSessionPlan(p)}>
-                        Registrar
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
-              {todaySessions
-                .filter((s) => !s.planId || !todayPlans.some((p) => p.id === s.planId))
-                .map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <span className="flex-1 truncate text-sm text-ink-3">{s.label}</span>
-                    <span className="flex items-center gap-1 text-sm font-medium text-income">
-                      <Check className="size-4" aria-hidden /> Feito
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </Card>
-
         <FinanceGlance />
 
-        <FocusGoals />
+        <FocusGoals className="lg:col-span-3" />
       </div>
 
-      <SessionForm open={Boolean(sessionPlan)} plan={sessionPlan} date={today} onClose={() => setSessionPlan(null)} />
-      {startDialog}
     </div>
   );
 }
@@ -387,7 +334,7 @@ function FinanceGlance() {
   );
 }
 
-function FocusGoals() {
+function FocusGoals({ className }: { className?: string }) {
   const goals = usePersonalStore((s) => s.goals);
   const entries = usePersonalStore((s) => s.goalEntries);
   const ctx = useGoalContext();
@@ -407,6 +354,7 @@ function FocusGoals() {
     <Card
       title="Metas em andamento"
       flush
+      className={className}
       action={
         <Link to="/personal/goals" className="text-sm font-medium text-accent hover:underline">
           Todas
@@ -416,7 +364,7 @@ function FocusGoals() {
       {focusGoals.length === 0 ? (
         <EmptyState icon={Target} title="Nenhuma meta em andamento" className="py-6" />
       ) : (
-        <ul className="flex flex-col gap-4 px-5 pt-2 pb-5">
+        <ul className="flex flex-col gap-4 px-5 pt-2 pb-5 lg:grid lg:grid-cols-3 lg:gap-8">
           {focusGoals.map(({ goal, metrics }) => {
             const days = goal.deadline ? daysBetween(today, goal.deadline) : null;
             const value =

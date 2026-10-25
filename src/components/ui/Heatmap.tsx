@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { addDaysISO, fmt, startOfWeekISO, todayISO, type ISODate } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 
@@ -10,6 +11,28 @@ interface HeatmapProps {
   describe?: (date: ISODate, state: HeatState) => string;
   label: string;
   cellClassName?: string;
+  /** Mostra as semanas mais recentes que couberem na largura, até `weeks`. */
+  fit?: boolean;
+}
+
+/** Largura de uma coluna: célula de 10px + 3px de espaço. */
+const COLUMN_PX = 13;
+
+/** Quantas semanas cabem no elemento (só no modo `fit`). */
+function useFittingWeeks(max: number, enabled: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [weeks, setWeeks] = useState(max);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry?.contentRect.width ?? 0;
+      setWeeks(Math.max(4, Math.min(max, Math.floor((width + 3) / COLUMN_PX))));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [max, enabled]);
+  return { ref, weeks: enabled ? weeks : max };
 }
 
 const STATE_CLASS: Record<HeatState, string> = {
@@ -22,7 +45,8 @@ const STATE_CLASS: Record<HeatState, string> = {
 const ROW_LABELS = ['Seg', '', 'Qua', '', 'Sex', '', ''];
 
 /** Grade estilo GitHub: colunas são semanas (seg→dom), da mais antiga para a atual. */
-export function Heatmap({ weeks, state, describe, label, cellClassName }: HeatmapProps) {
+export function Heatmap({ weeks: maxWeeks, state, describe, label, cellClassName, fit = false }: HeatmapProps) {
+  const { ref, weeks } = useFittingWeeks(maxWeeks, fit);
   const today = todayISO();
   const firstMonday = addDaysISO(startOfWeekISO(today), -7 * (weeks - 1));
   const columns = Array.from({ length: weeks }, (_, w) =>
@@ -38,9 +62,9 @@ export function Heatmap({ weeks, state, describe, label, cellClassName }: Heatma
           </span>
         ))}
       </div>
-      <div className="flex gap-[3px] overflow-hidden">
+      <div ref={ref} className={cn('flex gap-[3px] overflow-hidden', fit && 'min-w-0 flex-1')}>
         {columns.map((days) => (
-          <div key={days[0]} className="flex flex-col gap-[3px]">
+          <div key={days[0]} className="flex shrink-0 flex-col gap-[3px]">
             {days.map((date) => {
               const s = date > today ? 'future' : state(date);
               return (

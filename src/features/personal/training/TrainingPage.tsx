@@ -179,11 +179,12 @@ export function TrainingPage() {
 
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
-          <Card title="Dias treinados" description="Últimas 26 semanas">
-            <div className="overflow-x-auto">
+          <Card title="Dias treinados" description="Semanas mais recentes">
+            <div>
               <Heatmap
-                weeks={26}
-                label="Dias com treino nas últimas 26 semanas"
+                fit
+                weeks={52}
+                label="Dias com treino nas últimas semanas"
                 state={(d) => (trainedDays.has(d) ? 'done' : 'missed')}
                 describe={(d, s) => `${fmt.short(d)}: ${s === 'done' ? 'treinou' : 'sem treino'}`}
               />
