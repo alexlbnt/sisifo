@@ -1,10 +1,14 @@
 import { useId, useState, type FormEvent } from 'react';
+import { ListChecks } from 'lucide-react';
 import { Button, Field, Input, Modal, Select, Textarea } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { todayISO, type ISODate } from '@/lib/dates';
 import { INTENSITY_LABELS, WORKOUT_KINDS } from '../meta';
 import { usePersonalStore } from '../store';
 import type { Intensity, WorkoutKind, WorkoutPlan, WorkoutSession } from '../types';
+import { formatSets } from './progress';
+import { useRunStore } from './runStore';
+import { useStartWorkout } from './StartWorkout';
 
 interface SessionFormProps {
   open: boolean;
@@ -25,6 +29,8 @@ function SessionFormInner({ onClose, session, plan, date: defaultDate }: Session
   const plans = usePersonalStore((s) => s.workoutPlans);
   const addSession = usePersonalStore((s) => s.addSession);
   const updateSession = usePersonalStore((s) => s.updateSession);
+  const editSets = useRunStore((s) => s.editSession);
+  const { begin, dialog } = useStartWorkout();
 
   const [planId, setPlanId] = useState(session?.planId ?? plan?.id ?? '');
   const [date, setDate] = useState(session?.date ?? defaultDate ?? todayISO());
@@ -58,6 +64,8 @@ function SessionFormInner({ onClose, session, plan, date: defaultDate }: Session
       intensity,
       notes: notes.trim() || undefined,
       planId: planId || undefined,
+      // As séries são editadas no modo treino; aqui elas só passam adiante.
+      exercises: session?.exercises,
     };
     if (session) updateSession(session.id, input);
     else addSession(input);
@@ -133,6 +141,27 @@ function SessionFormInner({ onClose, session, plan, date: defaultDate }: Session
             ))}
           </div>
         </Field>
+        {session?.exercises?.length ? (
+          <div className="rounded-xl border border-line p-3">
+            <ul className="flex flex-col gap-1 text-sm">
+              {session.exercises.map((ex) => (
+                <li key={ex.id} className="flex gap-2">
+                  <span className="font-medium">{ex.name}</span>
+                  <span className="text-ink-3 tabular">{formatSets(ex.sets)}</span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={ListChecks}
+              className="mt-2"
+              onClick={() => begin(() => editSets(session))}
+            >
+              Editar séries
+            </Button>
+          </div>
+        ) : null}
         <Field label="Anotações (opcional)" htmlFor={`${id}-notes`}>
           <Textarea id={`${id}-notes`} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Cargas, como se sentiu, dores..." />
         </Field>
@@ -142,6 +171,7 @@ function SessionFormInner({ onClose, session, plan, date: defaultDate }: Session
           </p>
         )}
       </form>
+      {dialog}
     </Modal>
   );
 }

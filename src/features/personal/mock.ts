@@ -4,6 +4,7 @@ import { seededRandom } from '@/lib/random';
 import { MOCK_SAVINGS_ID } from '@/features/finance/mock';
 import { defaultAreas } from './defaultAreas';
 import type {
+  PlanExercise,
   Goal,
   GoalEntry,
   Habit,
@@ -196,10 +197,54 @@ export function createPersonalMock(): PersonalState {
 
   /* ───────── Treino ───────── */
 
+  // [nome, séries, repetições alvo, descanso (s), carga inicial em kg (0 = peso do corpo), reps base]
+  type MockExercise = [string, number, string, number, number, number];
+  const exercises = (list: MockExercise[]): PlanExercise[] =>
+    list.map(([name, sets, reps, restSec]) => ({ id: uid(), name, sets, reps, restSec }));
+  const mockLoads = new Map<string, { start: number; reps: number }>();
+  const planWith = (list: MockExercise[]) => {
+    for (const [name, , , , start, reps] of list) mockLoads.set(name, { start, reps });
+    return exercises(list);
+  };
+
   const workoutPlans: WorkoutPlan[] = [
-    { id: uid(), label: 'Treino A: peito e tríceps', kind: 'strength', weekdays: [1, 4], durationMin: 60 },
-    { id: uid(), label: 'Treino B: costas e bíceps', kind: 'strength', weekdays: [2, 5], durationMin: 60 },
-    { id: uid(), label: 'Treino C: pernas', kind: 'strength', weekdays: [3], durationMin: 70 },
+    {
+      id: uid(),
+      label: 'Treino A: peito e tríceps',
+      kind: 'strength',
+      weekdays: [1, 4],
+      durationMin: 60,
+      exercises: planWith([
+        ['Supino reto', 4, '8-10', 90, 55, 8],
+        ['Supino inclinado com halteres', 3, '10', 75, 20, 10],
+        ['Tríceps na corda', 3, '12', 60, 22.5, 12],
+        ['Mergulho nas paralelas', 3, 'até a falha', 60, 0, 9],
+      ]),
+    },
+    {
+      id: uid(),
+      label: 'Treino B: costas e bíceps',
+      kind: 'strength',
+      weekdays: [2, 5],
+      durationMin: 60,
+      exercises: planWith([
+        ['Barra fixa', 4, '6-8', 120, 0, 6],
+        ['Remada curvada', 4, '8-10', 90, 45, 8],
+        ['Rosca direta', 3, '10', 60, 17.5, 10],
+      ]),
+    },
+    {
+      id: uid(),
+      label: 'Treino C: pernas',
+      kind: 'strength',
+      weekdays: [3],
+      durationMin: 70,
+      exercises: planWith([
+        ['Agachamento livre', 4, '6-8', 150, 70, 6],
+        ['Leg press', 3, '10-12', 90, 140, 10],
+        ['Panturrilha em pé', 4, '15', 45, 50, 15],
+      ]),
+    },
     { id: uid(), label: 'Muay Thai', kind: 'muay_thai', weekdays: [2, 4], durationMin: 90 },
     { id: uid(), label: 'Corrida leve', kind: 'cardio', weekdays: [6], durationMin: 35 },
   ];
@@ -218,6 +263,23 @@ export function createPersonalMock(): PersonalState {
         durationMin: plan.durationMin + rng.int(-10, 15),
         intensity: rng.int(2, 5) as Intensity,
         planId: plan.id,
+        ...(plan.exercises && {
+          // Progressão: +2,5 kg (ou +1 repetição) a cada ~3 semanas, com dias melhores e piores.
+          exercises: plan.exercises.map((ex) => {
+            const base = mockLoads.get(ex.name)!;
+            const steps = Math.floor((112 - i) / 21);
+            const load = base.start ? base.start + steps * 2.5 + (rng.chance(0.2) ? -2.5 : 0) : undefined;
+            const reps = base.start ? base.reps : base.reps + steps;
+            return {
+              id: ex.id,
+              name: ex.name,
+              sets: Array.from({ length: ex.sets }, (_, k) => ({
+                reps: Math.max(1, reps - (k >= 2 ? rng.int(0, 2) : 0)),
+                ...(load && { load }),
+              })),
+            };
+          }),
+        }),
       });
     }
   }

@@ -1,4 +1,4 @@
-import { lazy, useEffect, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TodayPage } from '@/features/dashboard/TodayPage';
@@ -20,6 +20,7 @@ const TasksPage = page(() => import('@/features/personal/tasks/TasksPage'), 'Tas
 const GoalsPage = page(() => import('@/features/personal/goals/GoalsPage'), 'GoalsPage');
 const HabitsPage = page(() => import('@/features/personal/habits/HabitsPage'), 'HabitsPage');
 const TrainingPage = page(() => import('@/features/personal/training/TrainingPage'), 'TrainingPage');
+const WorkoutScreen = page(() => import('@/features/personal/training/WorkoutScreen'), 'WorkoutScreen');
 const ReviewPage = page(() => import('@/features/review/ReviewPage'), 'ReviewPage');
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
 
@@ -61,6 +62,15 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="painel" element={<ToPanel />} />
+        {/* Modo "no treino": tela cheia, fora do layout com menu. */}
+        <Route
+          path="treino"
+          element={
+            <Suspense fallback={<Splash />}>
+              <WorkoutScreen />
+            </Suspense>
+          }
+        />
         <Route element={<AppLayout />}>
           <Route index element={<TodayPage />} />
           <Route path="finance" element={<FinanceOverviewPage />} />

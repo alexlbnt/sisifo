@@ -169,6 +169,17 @@ export interface StreakInfo {
 
 export type WorkoutKind = 'strength' | 'muay_thai' | 'cardio' | 'mobility';
 
+/** Exercício previsto num treino da divisão (ex.: supino, 4 séries de 8 a 10). */
+export interface PlanExercise {
+  id: string;
+  name: string;
+  sets: number;
+  /** Repetições alvo, como texto livre: "8", "8-12", "até a falha". */
+  reps: string;
+  /** Descanso entre séries, em segundos. */
+  restSec: number;
+}
+
 export interface WorkoutPlan {
   id: string;
   label: string;
@@ -177,11 +188,27 @@ export interface WorkoutPlan {
   weekdays: number[];
   /** Duração prevista em minutos. */
   durationMin: number;
+  /** Sem valor: treino sem lista de exercícios (ex.: Muay Thai, corrida). */
+  exercises?: PlanExercise[];
 }
 
 export type WorkoutPlanInput = Omit<WorkoutPlan, 'id'>;
 
 export type Intensity = 1 | 2 | 3 | 4 | 5;
+
+/** Uma série feita. Carga em kg (aceita meio quilo); sem carga: peso do corpo. */
+export interface SetLog {
+  reps: number;
+  load?: number;
+}
+
+/** Um exercício feito numa sessão, com as séries concluídas. */
+export interface SessionExercise {
+  /** Id do exercício na divisão, quando veio dela. */
+  id: string;
+  name: string;
+  sets: SetLog[];
+}
 
 export interface WorkoutSession {
   id: string;
@@ -192,6 +219,8 @@ export interface WorkoutSession {
   intensity: Intensity;
   notes?: string;
   planId?: string;
+  /** Séries e cargas. Sem valor: só o registro do treino (como antes). */
+  exercises?: SessionExercise[];
 }
 
 export type WorkoutSessionInput = Omit<WorkoutSession, 'id'>;

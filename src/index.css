@@ -135,6 +135,39 @@
   }
 }
 
+/* ───────── Encosta de Sísifo (components/ui/Hill) ─────────
+ * A cor segue --phase quando há uma (Pomodoro, treino); senão, o acento do app.
+ */
+
+.hill-ground {
+  fill: var(--phase-soft, var(--surface-2));
+}
+.hill-trail {
+  stroke: var(--phase, var(--accent));
+  /* Linha inteira com pathLength=1: o deslocamento do traço revela o caminho já subido. */
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset 1s linear;
+}
+.hill-stone {
+  fill: var(--phase, var(--accent));
+  /* Anda um passo por segundo, sem animação contínua. */
+  transition: transform 1s linear;
+}
+.hill-grain {
+  stroke: var(--bg);
+  opacity: 0.5;
+}
+.hill-grain-dot {
+  fill: var(--bg);
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hill-stone,
+  .hill-trail {
+    transition: none;
+  }
+}
+
 /* Janelas sobem de baixo no celular (folha), sem animação para quem prefere menos movimento. */
 @keyframes sheet-in {
   from {

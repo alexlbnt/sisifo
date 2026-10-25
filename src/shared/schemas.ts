@@ -193,12 +193,32 @@ export const weeklyReviewSchema = z.object({
   createdAt: timestamp,
 });
 
+const planExerciseSchema = z.object({
+  id,
+  name: text(120),
+  sets: z.number().int().min(1).max(50),
+  reps: text(30),
+  restSec: z.number().int().min(0).max(3600),
+});
+
 export const workoutPlanSchema = z.object({
   id,
   label: text(200),
   kind: workoutKind,
   weekdays: weekdayList,
   durationMin: z.number().int().positive().max(1440),
+  exercises: z.array(planExerciseSchema).max(60).optional(),
+});
+
+const setLogSchema = z.object({
+  reps: z.number().int().min(0).max(1000),
+  load: z.number().min(0).max(2000).optional(),
+});
+
+const sessionExerciseSchema = z.object({
+  id,
+  name: text(120),
+  sets: z.array(setLogSchema).max(100),
 });
 
 export const workoutSessionSchema = z.object({
@@ -210,6 +230,7 @@ export const workoutSessionSchema = z.object({
   intensity: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   notes: text(2000).optional(),
   planId: id.optional(),
+  exercises: z.array(sessionExerciseSchema).max(60).optional(),
 });
 
 /* ───────── Registros da sincronização ─────────

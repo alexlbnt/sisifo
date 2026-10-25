@@ -39,6 +39,8 @@ import { usePersonalStore } from '@/features/personal/store';
 import { SessionForm } from '@/features/personal/training/SessionForm';
 import { TaskItem } from '@/features/personal/tasks/TaskItem';
 import type { Area, WorkoutPlan } from '@/features/personal/types';
+import { useRunStore } from '@/features/personal/training/runStore';
+import { ActiveWorkoutBanner, useStartWorkout } from '@/features/personal/training/StartWorkout';
 import { currentFocus, reviewPending } from '@/features/review/summary';
 import { cn } from '@/lib/cn';
 import { currentMonthKey, daysBetween, todayISO } from '@/lib/dates';
@@ -62,6 +64,8 @@ export function TodayPage() {
   const [draft, setDraft] = useState('');
   const [draftArea, setDraftArea] = useState<Area>(() => defaultAreaFor(areas));
   const [sessionPlan, setSessionPlan] = useState<WorkoutPlan | null>(null);
+  const startFromPlan = useRunStore((s) => s.startFromPlan);
+  const { begin: beginWorkout, dialog: startDialog } = useStartWorkout();
 
   const todayTasks = useMemo(() => sortTasks(tasksForDay(tasks, today)), [tasks, today]);
   const overdue = useMemo(() => overdueTasks(tasks, today), [tasks, today]);
@@ -236,6 +240,7 @@ export function TodayPage() {
             </Link>
           }
         >
+          <ActiveWorkoutBanner className="mx-5 mb-2" />
           {todayPlans.length === 0 && todaySessions.length === 0 ? (
             <EmptyState icon={Dumbbell} title="Dia de descanso" text="Nada previsto na divisão para hoje." className="py-6" />
           ) : (
@@ -252,6 +257,10 @@ export function TodayPage() {
                       <span className="flex items-center gap-1 text-sm font-medium text-income">
                         <Check className="size-4" aria-hidden /> Feito
                       </span>
+                    ) : p.exercises?.length ? (
+                      <Button size="sm" onClick={() => beginWorkout(() => startFromPlan(p))}>
+                        Começar
+                      </Button>
                     ) : (
                       <Button size="sm" variant="secondary" onClick={() => setSessionPlan(p)}>
                         Registrar
@@ -280,6 +289,7 @@ export function TodayPage() {
       </div>
 
       <SessionForm open={Boolean(sessionPlan)} plan={sessionPlan} date={today} onClose={() => setSessionPlan(null)} />
+      {startDialog}
     </div>
   );
 }

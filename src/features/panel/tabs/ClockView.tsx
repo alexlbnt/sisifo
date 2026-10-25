@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { fmt, type ISODate } from '@/lib/dates';
 import { usePersonalStore } from '@/features/personal/store';
-import { Hill } from '../components/Hill';
+import { Hill } from '@/components/ui/Hill';
 import { NextUp } from '../components/NextUp';
 import { hhmm } from '../format';
 import { usePanelStore } from '../panelStore';

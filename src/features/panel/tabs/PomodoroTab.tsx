@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 import { usePersonalStore } from '@/features/personal/store';
 import { unlockAudio } from '../alarm';
 import { ClockStrip } from '../components/ClockStrip';
-import { Hill } from '../components/Hill';
+import { Hill } from '@/components/ui/Hill';
 import { NextUp } from '../components/NextUp';
 import { minutesLabel } from '../format';
 import { usePanelStore } from '../panelStore';

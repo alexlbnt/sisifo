@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Dumbbell, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -18,7 +18,18 @@ import { usePersonalStore } from '../store';
 import type { WorkoutPlan, WorkoutSession } from '../types';
 import { scheduleLabel } from '../habits/scheduleLabel';
 import { PlanForm } from './PlanForm';
+import { ProgressCard } from './ProgressCard';
+import { useRunStore } from './runStore';
 import { SessionForm } from './SessionForm';
+import { ActiveWorkoutBanner, StartWorkoutDialog, useStartWorkout } from './StartWorkout';
+
+/** "5 exercícios, 18 séries" para a linha do histórico. */
+function setsSummary(session: WorkoutSession): string | null {
+  const exercises = session.exercises ?? [];
+  if (!exercises.length) return null;
+  const sets = exercises.reduce((n, e) => n + e.sets.length, 0);
+  return `${exercises.length} ${exercises.length === 1 ? 'exercício' : 'exercícios'}, ${sets} séries`;
+}
 
 type SessionFormState = { session?: WorkoutSession; plan?: WorkoutPlan; date?: ISODate };
 
@@ -27,6 +38,9 @@ export function TrainingPage() {
   const sessions = usePersonalStore((s) => s.workoutSessions);
   const deleteSession = usePersonalStore((s) => s.deleteSession);
   const deletePlan = usePersonalStore((s) => s.deletePlan);
+  const startFromPlan = useRunStore((s) => s.startFromPlan);
+  const { begin, dialog: startDialog } = useStartWorkout();
+  const [choosing, setChoosing] = useState(false);
 
   const today = todayISO();
   const [weekOf, setWeekOf] = useState(today);
@@ -51,11 +65,18 @@ export function TrainingPage() {
         title="Treino"
         subtitle="Divisão da semana, o que foi feito e o histórico"
         actions={
-          <Button icon={Plus} onClick={() => setSessionForm({})}>
-            Registrar treino
-          </Button>
+          <>
+            <Button variant="secondary" icon={Plus} onClick={() => setSessionForm({})}>
+              Registrar
+            </Button>
+            <Button icon={Play} onClick={() => setChoosing(true)}>
+              Começar treino
+            </Button>
+          </>
         }
       />
+
+      <ActiveWorkoutBanner className="mb-4" />
 
       <section
         aria-label="Resumo da semana"
@@ -157,7 +178,7 @@ export function TrainingPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <div className="flex flex-col gap-4 lg:col-span-2">
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
           <Card title="Dias treinados" description="Últimas 26 semanas">
             <div className="overflow-x-auto">
               <Heatmap
@@ -190,8 +211,10 @@ export function TrainingPage() {
                       <p className="truncate text-sm font-medium">{p.label}</p>
                       <p className="text-xs text-ink-3">
                         {WORKOUT_KINDS[p.kind]} · {scheduleLabel(p.weekdays)} · {p.durationMin} min
+                        {p.exercises?.length ? ` · ${p.exercises.length} exercícios` : ''}
                       </p>
                     </div>
+                    <IconButton icon={Play} label={`Começar ${p.label}`} size="sm" className="text-accent" onClick={() => begin(() => startFromPlan(p))} />
                     <div className="flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                       <IconButton icon={Pencil} label={`Editar ${p.label}`} size="sm" onClick={() => setPlanForm({ plan: p })} />
                       <IconButton
@@ -208,39 +231,45 @@ export function TrainingPage() {
           </Card>
         </div>
 
-        <Card title="Histórico" flush className="lg:col-span-3">
-          {history.length === 0 ? (
-            <EmptyState icon={Dumbbell} title="Nenhum treino registrado" />
-          ) : (
-            <ul className="divide-y divide-line pb-2">
-              {history.map((s) => (
-                <li key={s.id} className="group flex items-center gap-3 px-5 py-2.5">
-                  <div className="w-14 shrink-0 text-xs text-ink-3">{relativeDay(s.date, today)}</div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{s.label}</p>
-                    <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-3">
-                      <span>{s.durationMin} min</span>
-                      <span>Intensidade: {INTENSITY_LABELS[s.intensity].toLowerCase()}</span>
-                      {s.notes && <span className="truncate italic">"{s.notes}"</span>}
-                    </p>
-                  </div>
-                  <Badge className="hidden sm:inline-flex">{WORKOUT_KINDS[s.kind]}</Badge>
-                  <div className="flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-                    <IconButton icon={Pencil} label={`Editar ${s.label}`} size="sm" onClick={() => setSessionForm({ session: s })} />
-                    <IconButton
-                      icon={Trash2}
-                      label={`Excluir ${s.label}`}
-                      size="sm"
-                      onClick={() => setToDelete({ kind: 'session', item: s })}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-3">
+          <ProgressCard />
+          <Card title="Histórico" flush>
+            {history.length === 0 ? (
+              <EmptyState icon={Dumbbell} title="Nenhum treino registrado" />
+            ) : (
+              <ul className="divide-y divide-line pb-2">
+                {history.map((s) => (
+                  <li key={s.id} className="group flex items-center gap-3 px-5 py-2.5">
+                    <div className="w-14 shrink-0 text-xs text-ink-3">{relativeDay(s.date, today)}</div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{s.label}</p>
+                      <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-3">
+                        <span>{s.durationMin} min</span>
+                        <span>Intensidade: {INTENSITY_LABELS[s.intensity].toLowerCase()}</span>
+                        {setsSummary(s) && <span>{setsSummary(s)}</span>}
+                        {s.notes && <span className="truncate italic">"{s.notes}"</span>}
+                      </p>
+                    </div>
+                    <Badge className="hidden sm:inline-flex">{WORKOUT_KINDS[s.kind]}</Badge>
+                    <div className="flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                      <IconButton icon={Pencil} label={`Editar ${s.label}`} size="sm" onClick={() => setSessionForm({ session: s })} />
+                      <IconButton
+                        icon={Trash2}
+                        label={`Excluir ${s.label}`}
+                        size="sm"
+                        onClick={() => setToDelete({ kind: 'session', item: s })}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
       </div>
 
+      <StartWorkoutDialog open={choosing} onClose={() => setChoosing(false)} />
+      {startDialog}
       <SessionForm
         open={Boolean(sessionForm)}
         session={sessionForm?.session}
