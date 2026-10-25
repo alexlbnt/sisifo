@@ -1,14 +1,16 @@
 import { useId, useMemo, useState, type FormEvent } from 'react';
-import { CalendarArrowUp, ChevronLeft, ChevronRight, CircleCheck, Dumbbell, Flame, ListTodo, Target, Wallet } from 'lucide-react';
+import { CalendarArrowUp, ChevronLeft, ChevronRight, CircleCheck, Dumbbell, Flag, Flame, ListTodo, Sparkles, Target, Wallet } from 'lucide-react';
 import { Button, Card, Field, IconButton, PageHeader, ProgressBar, Textarea } from '@/components/ui';
 import { expenseCategoryOrder, useCategoryLookup } from '@/features/finance/categories';
 import { useFinanceStore } from '@/features/finance/store';
-import { formatGoalValue } from '@/features/personal/goals/goalFormat';
+import { formatGoalValue, useGoalContext } from '@/features/personal/goals/goalFormat';
+import { StalledTasks } from '@/features/personal/tasks/StalledTasks';
+import { formatLoad } from '@/features/personal/training/progress';
 import { usePersonalStore } from '@/features/personal/store';
 import { cn } from '@/lib/cn';
 import { addDaysISO, fmt, relativeDay, startOfWeekISO, todayISO } from '@/lib/dates';
 import { formatBRL } from '@/lib/money';
-import { suggestedReviewWeek, weekSummary } from './summary';
+import { suggestedReviewWeek, weekHighlights, weekSummary } from './summary';
 
 const pct = (done: number, total: number) => (total ? Math.round((done / total) * 100) : null);
 
@@ -19,6 +21,7 @@ export function ReviewPage() {
   const finance = useFinanceStore();
   const categories = useCategoryLookup();
   const thisWeek = startOfWeekISO(today);
+  const goalCtx = useGoalContext();
 
   const summary = useMemo(
     () =>
@@ -32,8 +35,13 @@ export function ReviewPage() {
         categoryOrder: expenseCategoryOrder(finance.categories),
         goals: personal.goals,
         goalEntries: personal.goalEntries,
+        goalValue: goalCtx.sourceValue,
       }),
-    [week, today, personal, finance],
+    [week, today, personal, finance, goalCtx],
+  );
+  const highlights = useMemo(
+    () => weekHighlights(summary, (goal, delta) => `${goal.title}: +${formatGoalValue(goal, delta)}.`),
+    [summary],
   );
   const saved = personal.reviews.find((r) => r.id === week);
   const habitRate = pct(summary.habits.done, summary.habits.expected);
@@ -116,9 +124,18 @@ export function ReviewPage() {
             </Card>
           )}
 
-          {(summary.goals.length > 0 || summary.money.alerts.length > 0) && (
-            <Card title="Metas e orçamento">
+          {(summary.goals.length > 0 || summary.records.length > 0 || summary.money.alerts.length > 0) && (
+            <Card title="Metas, recordes e orçamento">
               <ul className="flex flex-col gap-2 text-sm">
+                {summary.records.map((r) => (
+                  <li key={r.name} className="flex items-center gap-2">
+                    <Flag className="size-4 shrink-0 text-income" aria-hidden />
+                    <span className="flex-1">Recorde em {r.name}</span>
+                    <span className="font-medium text-income tabular">
+                      {formatLoad(r.load)} × {r.reps}
+                    </span>
+                  </li>
+                ))}
                 {summary.goals.map(({ goal, delta }) => (
                   <li key={goal.id} className="flex items-center gap-2">
                     <Target className="size-4 shrink-0 text-accent" aria-hidden />
@@ -141,8 +158,16 @@ export function ReviewPage() {
           )}
         </div>
 
-        <ReviewForm key={week} week={week} openCount={summary.tasks.open.length} openIds={summary.tasks.open.map((t) => t.id)} />
+        <ReviewForm
+          key={week}
+          week={week}
+          openCount={summary.tasks.open.length}
+          openIds={summary.tasks.open.map((t) => t.id)}
+          highlights={highlights}
+        />
       </div>
+
+      <StalledTasks className="mt-4" limit={20} />
 
       {summary.tasks.open.length > 0 && (
         <Card title="Tarefas que ficaram para trás" flush className="mt-4">
@@ -188,7 +213,17 @@ function StatCard({
   );
 }
 
-function ReviewForm({ week, openCount, openIds }: { week: string; openCount: number; openIds: string[] }) {
+function ReviewForm({
+  week,
+  openCount,
+  openIds,
+  highlights,
+}: {
+  week: string;
+  openCount: number;
+  openIds: string[];
+  highlights: string[];
+}) {
   const id = useId();
   const saved = usePersonalStore((s) => s.reviews.find((r) => r.id === week));
   const saveReview = usePersonalStore((s) => s.saveReview);
@@ -211,7 +246,20 @@ function ReviewForm({ week, openCount, openIds }: { week: string; openCount: num
     <Card title="Sua revisão" description="Fica salva e o foco aparece na tela Hoje durante a semana">
       <form id={id} onSubmit={submit} className="flex flex-col gap-4">
         <Field label="O que deu certo?" htmlFor={`${id}-wins`}>
-          <Textarea id={`${id}-wins`} value={wins} onChange={(e) => setWins(e.target.value)} rows={3} maxLength={2000} />
+          <Textarea id={`${id}-wins`} value={wins} onChange={(e) => setWins(e.target.value)} rows={4} maxLength={2000} />
+          {highlights.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                const missing = highlights.filter((h) => !wins.includes(h));
+                if (missing.length) setWins((w) => [w.trim(), ...missing.map((h) => `- ${h}`)].filter(Boolean).join('\n'));
+              }}
+              className="flex items-center gap-1.5 self-start text-xs font-medium text-accent hover:underline"
+            >
+              <Sparkles className="size-3.5" aria-hidden />
+              Trazer os destaques da semana
+            </button>
+          )}
         </Field>
         <Field label="O que atrapalhou ou precisa mudar?" htmlFor={`${id}-notes`}>
           <Textarea id={`${id}-notes`} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={2000} />

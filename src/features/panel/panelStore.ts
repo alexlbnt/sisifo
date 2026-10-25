@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { todayISO, type ISODate } from '@/lib/dates';
-import type { AgendaEvent } from '@/shared/agenda';
+import { todayISO } from '@/lib/dates';
 import {
   applySettings,
   DEFAULT_POMODORO,
@@ -19,8 +18,9 @@ import {
 
 /**
  * Estado do Modo Painel. Fica só neste aparelho (não sincroniza): ajustes,
- * Pomodoro em andamento, tempo de foco por tarefa e as últimas leituras de
- * agenda e clima (para abrir sem internet mostrando o que já se sabia).
+ * Pomodoro em andamento, tempo de foco por tarefa e a última leitura do clima
+ * (para abrir sem internet mostrando o que já se sabia). A agenda fica na
+ * store compartilhada (features/agenda).
  */
 
 export type PanelTab = 'pomodoro' | 'agenda' | 'tasks';
@@ -53,19 +53,11 @@ export interface WeatherReading {
   fetchedAt: number;
 }
 
-export interface AgendaCache {
-  date: ISODate;
-  configured: boolean;
-  events: AgendaEvent[];
-  fetchedAt: number;
-}
-
 interface PanelStore {
   settings: PanelSettings;
   timer: PomodoroState;
   /** Tempo de foco (ms) acumulado por tarefa. */
   focusByTask: Record<string, number>;
-  agenda: AgendaCache | null;
   weather: WeatherReading | null;
 
   updateSettings: (patch: Partial<Omit<PanelSettings, 'pomodoro'>>) => void;
@@ -78,7 +70,6 @@ interface PanelStore {
   tickTimer: (now?: number) => Transition['ended'];
   linkTask: (taskId: string | null, now?: number) => void;
   clearFocusLog: () => void;
-  setAgenda: (agenda: AgendaCache) => void;
   setWeather: (weather: WeatherReading | null) => void;
 }
 
@@ -123,7 +114,6 @@ export const usePanelStore = create<PanelStore>()(
         settings: DEFAULT_PANEL_SETTINGS,
         timer: initialPomodoro(DEFAULT_POMODORO, todayISO()),
         focusByTask: {},
-        agenda: null,
         weather: null,
 
         updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -153,17 +143,17 @@ export const usePanelStore = create<PanelStore>()(
           }
         },
         clearFocusLog: () => set({ focusByTask: {} }),
-        setAgenda: (agenda) => set({ agenda }),
         setWeather: (weather) => set({ weather }),
       };
     },
     {
       name: PANEL_STORAGE_KEY,
       version: 1,
-      partialize: ({ settings, timer, focusByTask, agenda, weather }) => ({ settings, timer, focusByTask, agenda, weather }),
+      partialize: ({ settings, timer, focusByTask, weather }) => ({ settings, timer, focusByTask, weather }),
       // Ajustes novos em versões futuras ganham o valor padrão.
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<PanelStore>;
+        // `agenda` de versões antigas fica de fora: a agenda agora é compartilhada.
+        const { agenda: _old, ...p } = (persisted ?? {}) as Partial<PanelStore> & { agenda?: unknown };
         return {
           ...current,
           ...p,

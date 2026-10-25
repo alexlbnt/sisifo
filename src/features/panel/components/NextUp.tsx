@@ -1,21 +1,18 @@
 import { useMemo } from 'react';
 import { CalendarClock, MapPin } from 'lucide-react';
-import type { ISODate } from '@/lib/dates';
+import { startOfWeekISO, type ISODate } from '@/lib/dates';
+import { eventsOnLocalDay, useAgendaStore } from '@/features/agenda/agendaStore';
 import { cn } from '@/lib/cn';
 import { usePersonalStore } from '@/features/personal/store';
 import { headline, mergeAgenda, type AgendaItem } from '../agenda';
 import { hhmm, untilLabel } from '../format';
-import { usePanelStore } from '../panelStore';
 import { useNow } from '../useNow';
 
 /** Compromissos do Google e tarefas com horário de hoje, numa lista só. */
 export function useTodayAgenda(today: ISODate): AgendaItem[] {
-  const agenda = usePanelStore((s) => s.agenda);
+  const week = useAgendaStore((s) => s.weeks[startOfWeekISO(today)]);
   const tasks = usePersonalStore((s) => s.tasks);
-  return useMemo(
-    () => mergeAgenda(agenda?.date === today ? agenda.events : [], tasks, today),
-    [agenda, tasks, today],
-  );
+  return useMemo(() => mergeAgenda(week ? eventsOnLocalDay(week.events, today) : [], tasks, today), [week, tasks, today]);
 }
 
 interface NextUpProps {

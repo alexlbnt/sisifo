@@ -42,7 +42,9 @@ import { cn } from '@/lib/cn';
 import { currentMonthKey, daysBetween, todayISO } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
+import { StalledTasks } from '@/features/personal/tasks/StalledTasks';
 import { BoulderHero } from './BoulderHero';
+import { TodayAgenda } from './TodayAgenda';
 import { TrainingCard } from './TrainingCard';
 
 export function TodayPage() {
@@ -147,6 +149,8 @@ export function TodayPage() {
               </Link>
             </div>
           )}
+          <StalledTasks className="mx-5 mt-2 mb-1" />
+          <TodayAgenda today={today} className="mx-5 mt-2 mb-1" />
           {todayTasks.length === 0 ? (
             <EmptyState icon={ListTodo} title="Nenhuma tarefa para hoje" text="Use o campo abaixo para adicionar." className="py-6" />
           ) : (

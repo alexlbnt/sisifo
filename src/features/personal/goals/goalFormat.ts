@@ -3,7 +3,9 @@ import { useAccountBalanceAt } from '@/features/finance/accountHooks';
 import { todayISO } from '@/lib/dates';
 import { formatBRL, parseBRL } from '@/lib/money';
 import type { GoalContext } from '../selectors';
+import { usePersonalStore } from '../store';
 import type { Goal } from '../types';
+import { sourceValue } from './sources';
 
 const number = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
@@ -28,9 +30,18 @@ export function parseGoalValue(goal: Pick<Goal, 'kind'>, input: string): number 
   return value === null ? null : negative ? -value : value;
 }
 
-/** Contexto para calcular metas: hoje e o saldo das contas (metas de poupança). */
+/** Contexto para calcular metas: hoje, o saldo das contas e os dados das metas automáticas. */
 export function useGoalContext(): GoalContext {
   const accountBalance = useAccountBalanceAt();
+  const sessions = usePersonalStore((s) => s.workoutSessions);
+  const habits = usePersonalStore((s) => s.habits);
   const today = todayISO();
-  return useMemo(() => ({ today, accountBalance }), [today, accountBalance]);
+  return useMemo(
+    () => ({
+      today,
+      accountBalance,
+      sourceValue: (goal: Goal, upTo: string) => (goal.source ? sourceValue(goal, goal.source, { sessions, habits }, upTo) : null),
+    }),
+    [today, accountBalance, sessions, habits],
+  );
 }

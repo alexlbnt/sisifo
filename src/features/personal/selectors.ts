@@ -53,6 +53,8 @@ export interface GoalContext {
   today: ISODate;
   /** Saldo de uma conta numa data (metas de poupança ligadas a conta). */
   accountBalance?: (accountId: string, upTo: ISODate) => number;
+  /** Valor de uma meta com fonte (treino, hábito) numa data; null se a meta não tem fonte. */
+  sourceValue?: (goal: Goal, upTo: ISODate) => number | null;
 }
 
 const PACE_WINDOW_DAYS = 90;
@@ -63,6 +65,10 @@ function measuredValue(goal: Goal, entries: GoalEntry[], upTo: ISODate, ctx: Goa
   const start = goal.start ?? 0;
   if (goal.kind === 'savings' && goal.accountId && ctx.accountBalance) {
     return ctx.accountBalance(goal.accountId, upTo);
+  }
+  if (goal.kind === 'numeric' && goal.source && ctx.sourceValue) {
+    const value = ctx.sourceValue(goal, upTo);
+    if (value !== null) return value;
   }
   const mine = entries.filter((e) => e.goalId === goal.id && e.date <= upTo);
   if (goal.kind === 'numeric' && goal.measure === 'last') {
@@ -159,6 +165,16 @@ export function overdueTasks(tasks: Task[], today: ISODate): Task[] {
   return tasks
     .filter((t) => t.status !== 'done' && t.date < today)
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** A partir de quantos adiamentos uma tarefa vira "zumbi" (pede uma decisão). */
+export const STALLED_AFTER = 3;
+
+/** Tarefas que vêm sendo empurradas para depois: as mais adiadas primeiro. Repetições ficam de fora. */
+export function stalledTasks(tasks: Task[]): Task[] {
+  return tasks
+    .filter((t) => t.status !== 'done' && !t.repeat && (t.postponed ?? 0) >= STALLED_AFTER)
+    .sort((a, b) => (b.postponed ?? 0) - (a.postponed ?? 0) || a.date.localeCompare(b.date));
 }
 
 /* ───────── Hábitos ───────── */

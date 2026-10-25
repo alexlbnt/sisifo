@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { CalendarClock, CircleAlert, CircleCheck, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { CalendarClock, CircleAlert, CircleCheck, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { Badge, Button, CheckCircle, IconButton, Input, ProgressBar } from '@/components/ui';
 import { useAccountName } from '@/features/finance/accountHooks';
 import { cn } from '@/lib/cn';
@@ -10,6 +10,7 @@ import { goalMetrics, type GoalMetrics } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Goal } from '../types';
 import { formatGoalValue, parseGoalValue, useGoalContext } from './goalFormat';
+import { sourceLabel } from './sources';
 
 interface GoalCardProps {
   goal: Goal;
@@ -138,6 +139,7 @@ function MeasuredBody({ goal, metrics }: { goal: Goal; metrics: GoalMetrics }) {
   const today = todayISO();
   const format = (v: number) => formatGoalValue(goal, v);
   const linkedAccount = goal.kind === 'savings' && goal.accountId;
+  const habits = usePersonalStore((s) => s.habits);
   const lastMode = goal.kind === 'numeric' && goal.measure === 'last';
 
   const recent = allEntries
@@ -197,7 +199,12 @@ function MeasuredBody({ goal, metrics }: { goal: Goal; metrics: GoalMetrics }) {
         </p>
       )}
 
-      {linkedAccount ? (
+      {goal.kind === 'numeric' && goal.source ? (
+        <p className="mt-auto flex items-center gap-1.5 pt-4 text-sm text-ink-3">
+          <RefreshCw className="size-3.5 shrink-0" aria-hidden />
+          Atualiza sozinha: {sourceLabel(goal.source, habits).replace(/^./, (c) => c.toLowerCase())}.
+        </p>
+      ) : linkedAccount ? (
         <Link
           to={`/finance/transactions?conta=${goal.accountId}`}
           className="mt-auto pt-4 text-sm font-medium text-accent hover:underline"

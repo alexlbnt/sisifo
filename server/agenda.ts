@@ -134,7 +134,26 @@ export function eventsOnDay(icsTexts: string[], day: string, timeZone: string): 
   return result.sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start - b.start || a.title.localeCompare(b.title));
 }
 
-export async function loadAgenda(day: string, timeZone: string): Promise<AgendaEvent[]> {
+/**
+ * Eventos de `days` dias a partir de `day`. Um evento com horário que cruza a
+ * meia-noite aparece uma vez; um de dia inteiro, uma vez por dia.
+ */
+export function eventsOnDays(icsTexts: string[], day: string, days: number, timeZone: string): AgendaEvent[] {
+  const seen = new Set<string>();
+  const result: AgendaEvent[] = [];
+  for (let i = 0; i < days; i++) {
+    const date = addDays(day, i);
+    for (const event of eventsOnDay(icsTexts, date, timeZone)) {
+      const id = event.allDay ? `${event.id}#${date}` : event.id;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      result.push({ ...event, id });
+    }
+  }
+  return result.sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay));
+}
+
+export async function loadAgenda(day: string, timeZone: string, days = 1): Promise<AgendaEvent[]> {
   const texts = await Promise.all(icalUrls().map((url) => fetchCalendar(url)));
-  return eventsOnDay(texts, day, timeZone);
+  return eventsOnDays(texts, day, days, timeZone);
 }

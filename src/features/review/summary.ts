@@ -4,9 +4,11 @@ import {
   isScheduled,
   isSkipped,
   isWeekly,
+  stalledTasks,
   trainingWeek,
   weekCount,
 } from '@/features/personal/selectors';
+import { exerciseKey, formatLoad } from '@/features/personal/training/progress';
 import type { Goal, GoalEntry, Habit, Task, WeeklyReview, WorkoutPlan, WorkoutSession } from '@/features/personal/types';
 import { addDaysISO, monthKeyOf, startOfWeekISO, weekDaysFrom, weekdayOf, type ISODate } from '@/lib/dates';
 
@@ -24,6 +26,10 @@ export interface WeekSummary {
   training: { planned: number; sessions: number; minutes: number };
   money: { expenseCents: number; incomeCents: number; topCategories: Array<{ category: CategoryId; cents: number }>; alerts: BudgetStatus[] };
   goals: Array<{ goal: Goal; delta: number }>;
+  /** Exercícios em que a semana bateu a maior carga de antes. */
+  records: Array<{ name: string; load: number; reps: number }>;
+  /** Tarefas abertas que vêm sendo adiadas. */
+  stalled: Task[];
 }
 
 export interface SummaryInput {
@@ -36,6 +42,8 @@ export interface SummaryInput {
   categoryOrder: CategoryId[];
   goals: Goal[];
   goalEntries: GoalEntry[];
+  /** Valor de metas automáticas (treino, hábito) numa data; sem isto, só valem os registros. */
+  goalValue?: (goal: Goal, upTo: ISODate) => number | null;
 }
 
 /**
@@ -92,12 +100,40 @@ export function weekSummary(start: ISODate, today: ISODate, input: SummaryInput)
     (b) => b.level !== 'ok',
   );
 
+  const lastDay = end < today ? end : today;
   const goals = input.goals
-    .map((goal) => ({
-      goal,
-      delta: input.goalEntries.filter((e) => e.goalId === goal.id && inWeek(e.date)).reduce((sum, e) => sum + e.value, 0),
-    }))
+    .map((goal) => {
+      const after = goal.source && input.goalValue?.(goal, lastDay);
+      const before = goal.source && input.goalValue?.(goal, addDaysISO(start, -1));
+      const delta =
+        typeof after === 'number' && typeof before === 'number'
+          ? after - before
+          : input.goalEntries.filter((e) => e.goalId === goal.id && inWeek(e.date)).reduce((sum, e) => sum + e.value, 0);
+      return { goal, delta };
+    })
     .filter((g) => g.delta !== 0);
+
+  // Recordes: maior carga da semana acima da maior carga de antes da semana (primeira vez não conta).
+  const before = new Map<string, number>();
+  const best = new Map<string, { name: string; load: number; reps: number }>();
+  for (const session of input.sessions) {
+    if (session.date > lastDay) continue;
+    for (const ex of session.exercises ?? []) {
+      const key = exerciseKey(ex.name);
+      for (const set of ex.sets) {
+        const load = set.load ?? 0;
+        if (!load) continue;
+        if (session.date < start) before.set(key, Math.max(before.get(key) ?? 0, load));
+        else {
+          const cur = best.get(key);
+          if (!cur || load > cur.load || (load === cur.load && set.reps > cur.reps)) best.set(key, { name: ex.name, load, reps: set.reps });
+        }
+      }
+    }
+  }
+  const records = [...best.entries()]
+    .filter(([key, r]) => (before.get(key) ?? 0) > 0 && r.load > before.get(key)!)
+    .map(([, r]) => r);
 
   return {
     start,
@@ -115,7 +151,31 @@ export function weekSummary(start: ISODate, today: ISODate, input: SummaryInput)
     },
     money: { expenseCents, incomeCents, topCategories, alerts },
     goals,
+    records,
+    stalled: stalledTasks(input.tasks),
   };
+}
+
+/**
+ * Destaques da semana em frases curtas, para começar o "O que deu certo?".
+ * Só entra o que foi bom: a revisão continua sendo da pessoa.
+ */
+export function weekHighlights(summary: WeekSummary, goalTitle: (goal: Goal, delta: number) => string): string[] {
+  const lines: string[] = [];
+  const { training, habits, tasks } = summary;
+  if (training.sessions > 0) {
+    const planned = training.planned ? ` de ${training.planned} previstos` : '';
+    lines.push(`${training.sessions} ${training.sessions === 1 ? 'treino' : 'treinos'}${planned}, ${training.minutes} minutos no total.`);
+  }
+  const records = summary.records.map((r) => `${r.name} (${formatLoad(r.load)} × ${r.reps})`);
+  if (records.length > 2) lines.push(`${records.length} recordes: ${records.join(', ')}.`);
+  else for (const r of summary.records) lines.push(`Recorde em ${r.name}: ${formatLoad(r.load)} × ${r.reps}.`);
+  if (habits.expected > 0 && habits.done / habits.expected >= 0.7) {
+    lines.push(`${Math.round((habits.done / habits.expected) * 100)}% dos hábitos cumpridos.`);
+  }
+  if (tasks.total > 0 && tasks.done / tasks.total >= 0.6) lines.push(`${tasks.done} de ${tasks.total} tarefas concluídas.`);
+  for (const { goal, delta } of summary.goals) if (delta > 0) lines.push(goalTitle(goal, delta));
+  return lines;
 }
 
 /** Foco em vigor hoje: o da revisão mais recente da semana passada ou desta. */

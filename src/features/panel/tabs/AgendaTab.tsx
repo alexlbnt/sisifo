@@ -1,11 +1,11 @@
 import { CalendarOff, CircleCheck, ListTodo } from 'lucide-react';
-import { fmt, type ISODate } from '@/lib/dates';
+import { fmt, startOfWeekISO, type ISODate } from '@/lib/dates';
+import { useAgendaStore } from '@/features/agenda/agendaStore';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/features/sync/authStore';
 import { classifyAgenda, type AgendaSlot } from '../agenda';
 import { NextUp, useTodayAgenda } from '../components/NextUp';
 import { hhmm } from '../format';
-import { usePanelStore } from '../panelStore';
 import { useNow } from '../useNow';
 
 const SLOT_STYLE: Record<AgendaSlot, string> = {
@@ -16,9 +16,9 @@ const SLOT_STYLE: Record<AgendaSlot, string> = {
   later: 'border-line bg-surface',
 };
 
-function AgendaNotice() {
+function AgendaNotice({ today }: { today: ISODate }) {
   const phase = useAuthStore((s) => s.phase);
-  const agenda = usePanelStore((s) => s.agenda);
+  const agenda = useAgendaStore((s) => s.weeks[startOfWeekISO(today)]);
   let text: string | null = null;
   if (phase === 'local') text = 'Sem sincronização: mostrando só as tarefas com horário.';
   else if (agenda && !agenda.configured) text = 'Google Calendar não configurado (GOOGLE_ICAL_URL).';
@@ -38,7 +38,7 @@ export function AgendaTab({ today }: { today: ISODate }) {
           {fmt.long(today)}
         </h2>
         <NextUp today={today} />
-        <AgendaNotice />
+        <AgendaNotice today={today} />
       </div>
 
       <ol className="scroll-y flex min-h-0 flex-col gap-2 pb-2" aria-label="Agenda de hoje">

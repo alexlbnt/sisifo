@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventsOnDay, zonedMidnight } from './agenda';
+import { eventsOnDay, eventsOnDays, zonedMidnight } from './agenda';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -106,5 +106,26 @@ describe('zonedMidnight', () => {
     expect(zonedMidnight('2026-10-26', TZ)).toBe(at('2026-10-26T03:00:00Z'));
     expect(zonedMidnight('2026-07-01', 'Europe/Lisbon')).toBe(at('2026-06-30T23:00:00Z'));
     expect(zonedMidnight('2026-01-15', 'Europe/Lisbon')).toBe(at('2026-01-15T00:00:00Z'));
+  });
+});
+
+describe('eventsOnDays', () => {
+  it('junta vários dias sem repetir evento com horário e repete o de dia inteiro', () => {
+    const text = ics(`
+BEGIN:VEVENT
+UID:trip
+DTSTART;VALUE=DATE:20261026
+DTEND;VALUE=DATE:20261028
+SUMMARY:Viagem
+END:VEVENT
+BEGIN:VEVENT
+UID:late
+DTSTART;TZID=America/Sao_Paulo:20261026T230000
+DTEND;TZID=America/Sao_Paulo:20261027T010000
+SUMMARY:Plantão
+END:VEVENT`);
+    const events = eventsOnDays([text], '2026-10-26', 3, TZ);
+    expect(events.filter((e) => e.title === 'Viagem')).toHaveLength(2);
+    expect(events.filter((e) => e.title === 'Plantão')).toHaveLength(1);
   });
 });

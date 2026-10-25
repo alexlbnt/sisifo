@@ -17,6 +17,7 @@ const FinanceOverviewPage = page(() => import('@/features/finance/pages/FinanceO
 const TransactionsPage = page(() => import('@/features/finance/pages/TransactionsPage'), 'TransactionsPage');
 const AccountsPage = page(() => import('@/features/finance/pages/AccountsPage'), 'AccountsPage');
 const TasksPage = page(() => import('@/features/personal/tasks/TasksPage'), 'TasksPage');
+const WeekPlanPage = page(() => import('@/features/personal/tasks/WeekPlanPage'), 'WeekPlanPage');
 const GoalsPage = page(() => import('@/features/personal/goals/GoalsPage'), 'GoalsPage');
 const HabitsPage = page(() => import('@/features/personal/habits/HabitsPage'), 'HabitsPage');
 const TrainingPage = page(() => import('@/features/personal/training/TrainingPage'), 'TrainingPage');
@@ -77,6 +78,7 @@ export function App() {
           <Route path="finance/transactions" element={<TransactionsPage />} />
           <Route path="finance/accounts" element={<AccountsPage />} />
           <Route path="personal/tasks" element={<TasksPage />} />
+          <Route path="personal/week" element={<WeekPlanPage />} />
           <Route path="personal/goals" element={<GoalsPage />} />
           <Route path="personal/habits" element={<HabitsPage />} />
           <Route path="personal/training" element={<TrainingPage />} />

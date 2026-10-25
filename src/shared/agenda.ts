@@ -17,7 +17,9 @@ export interface AgendaEvent {
 export interface AgendaResponse {
   /** false: não há GOOGLE_ICAL_URL no servidor; o painel mostra só as tarefas. */
   configured: boolean;
-  /** Dia pedido (YYYY-MM-DD), no fuso informado. */
+  /** Primeiro dia pedido (YYYY-MM-DD), no fuso informado. */
   date: string;
+  /** Quantos dias a partir de `date`. */
+  days: number;
   events: AgendaEvent[];
 }

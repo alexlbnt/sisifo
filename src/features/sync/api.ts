@@ -44,6 +44,6 @@ export const api = {
   logout: () => request<SessionStatus>('/api/session', { method: 'DELETE' }),
   sync: (payload: SyncRequest) =>
     request<SyncResponse>('/api/sync', { method: 'POST', body: JSON.stringify(payload) }),
-  agenda: (date: string, timeZone: string) =>
-    request<AgendaResponse>(`/api/agenda?date=${date}&tz=${encodeURIComponent(timeZone)}`),
+  agenda: (date: string, timeZone: string, days = 1) =>
+    request<AgendaResponse>(`/api/agenda?date=${date}&days=${days}&tz=${encodeURIComponent(timeZone)}`),
 };

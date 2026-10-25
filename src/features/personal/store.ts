@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ISODate } from '@/lib/dates';
+import { todayISO, type ISODate } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { persistInitialState } from '@/lib/persistNow';
 import { defaultAreas } from './defaultAreas';
@@ -53,6 +53,8 @@ interface PersonalActions {
   setTaskStatus: (id: string, status: TaskStatus) => void;
   toggleTask: (id: string) => void;
   moveTasksToDay: (ids: string[], date: ISODate) => void;
+  /** Recomeça uma tarefa adiada demais: nova data e contagem de adiamentos zerada. */
+  restartTask: (id: string, date: ISODate) => void;
   deleteTask: (id: string) => void;
 
   /* Hábitos */
@@ -113,6 +115,17 @@ function nextInSeries(task: Task, tasks: Task[]): Task | null {
     seriesId,
     createdAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Nova data de uma tarefa, contando o adiamento: só conta quando a tarefa já
+ * estava no dia (ou atrasada) e foi empurrada para depois, sem estar feita.
+ * Reorganizar tarefas futuras entre si não é adiar.
+ */
+export function withDate(task: Task, date: ISODate, today: ISODate = todayISO()): Task {
+  if (date === task.date) return task;
+  const postponed = task.status !== 'done' && task.date <= today && date > task.date;
+  return { ...task, date, ...(postponed && { postponed: (task.postponed ?? 0) + 1 }) };
 }
 
 /** Aplica um novo status e mantém a subtask ligada em sincronia. */
@@ -282,7 +295,13 @@ export const usePersonalStore = create<PersonalStore>()(
             if (t.id !== id) return t;
             // Campos opcionais apagados no formulário saem do item.
             const { time: _t, priority: _p, notes: _n, repeat: _r, link: _l, ...rest } = t;
-            return { ...rest, ...clean(input), ...(input.repeat && { seriesId: t.seriesId ?? t.id }) };
+            const moved = withDate(t, input.date);
+            return {
+              ...rest,
+              ...clean(input),
+              ...(moved.postponed !== undefined && { postponed: moved.postponed }),
+              ...(input.repeat && { seriesId: t.seriesId ?? t.id }),
+            };
           }),
         })),
 
@@ -295,7 +314,16 @@ export const usePersonalStore = create<PersonalStore>()(
         }),
 
       moveTasksToDay: (ids, date) =>
-        set((s) => ({ tasks: s.tasks.map((t) => (ids.includes(t.id) ? { ...t, date } : t)) })),
+        set((s) => ({ tasks: s.tasks.map((t) => (ids.includes(t.id) ? withDate(t, date) : t)) })),
+
+      restartTask: (id, date) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) => {
+            if (t.id !== id) return t;
+            const { postponed: _p, ...rest } = t;
+            return { ...rest, date };
+          }),
+        })),
 
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
 

@@ -6,10 +6,11 @@ Painel pessoal para finanças, tarefas, metas, hábitos e treinos. É **local-fi
 
 - **Hoje:** tarefas do dia (com horário e prioridade), hábitos, treino, dinheiro (saldo disponível, quanto dá para gastar hoje e o que vence em 7 dias), metas e o foco da semana.
 - **Finanças:** lançamentos com contas, transferências e cartão de crédito (faturas, parcelas, limite); previsão do mês; orçamento por categoria; patrimônio líquido mês a mês.
-- **Metas:** por etapas, por número (livros, peso, km) ou em dinheiro (ligada a uma conta ou por aportes), com o ritmo necessário até o prazo.
-- **Tarefas:** prioridade, horário, notas e repetição (todo dia, dias úteis, semanal, mensal, "toda primeira segunda").
+- **Metas:** por etapas, por número (livros, peso, km) ou em dinheiro (ligada a uma conta ou por aportes), com o ritmo necessário até o prazo. Metas numéricas podem se atualizar sozinhas: pelo recorde de um exercício, pelos treinos registrados ou pelas marcações de um hábito.
+- **Tarefas:** prioridade, horário, notas e repetição (todo dia, dias úteis, semanal, mensal, "toda primeira segunda"). Tarefa adiada 3 vezes ou mais pede uma decisão: fazer hoje, virar hábito ou apagar.
+- **Semana:** os 7 dias com compromissos do Google Calendar, treinos previstos e tarefas, com dias cheios em destaque; arraste as tarefas entre os dias (ou toque para mover, no celular).
 - **Hábitos:** feito/não feito ou por quantidade (ex.: 8 copos), em dias fixos ou X vezes por semana, com dia pulado justificado.
-- **Revisão semanal:** resumo da semana, o que deu certo, o que mudar e o foco da próxima.
+- **Revisão semanal:** resumo da semana (com recordes e avanço das metas), destaques que viram rascunho do "o que deu certo", o que mudar e o foco da próxima.
 - **Captura rápida** (Ctrl+K, botão ⚡ no celular ou atalho do ícone): "café 8,50" vira despesa; "ligar pro banco amanhã às 14h !" vira tarefa.
 - **Notificações push:** resumo da manhã, contas a vencer, hábitos pendentes à noite e lembrete da revisão.
 - **Feito para o polegar no celular:** botão + no centro da barra (gasto rápido com teclado de calculadora, captura por texto ou voz, nova tarefa), deslizar nas linhas (concluir ou adiar), puxar para atualizar e janelas que sobem de baixo.

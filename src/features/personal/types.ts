@@ -39,6 +39,17 @@ export type GoalKind = 'checklist' | 'numeric' | 'savings';
 /** Meta numérica: somar os registros (livros lidos) ou usar o último (peso medido). */
 export type GoalMeasure = 'sum' | 'last';
 
+/**
+ * Meta numérica que se atualiza sozinha a partir de outra área do app:
+ * - exercise: o recorde de carga (kg) de um exercício;
+ * - workouts: treinos registrados desde a criação da meta (de uma modalidade ou todos);
+ * - habit: marcações de um hábito desde a criação (ou a soma, nos de quantidade).
+ */
+export type GoalSource =
+  | { type: 'exercise'; exercise: string }
+  | { type: 'workouts'; kind?: WorkoutKind }
+  | { type: 'habit'; habitId: string };
+
 export interface Goal {
   id: string;
   title: string;
@@ -58,12 +69,14 @@ export interface Goal {
   measure?: GoalMeasure;
   /** Poupança: conta cujo saldo é o progresso. Sem conta, valem os aportes registrados. */
   accountId?: string;
+  /** Numérica: valor vem de outra área (treino, hábito) em vez de registros manuais. */
+  source?: GoalSource;
   createdAt: string;
 }
 
 export type GoalInput = Pick<
   Goal,
-  'title' | 'description' | 'horizon' | 'area' | 'deadline' | 'kind' | 'target' | 'start' | 'unit' | 'measure' | 'accountId'
+  'title' | 'description' | 'horizon' | 'area' | 'deadline' | 'kind' | 'target' | 'start' | 'unit' | 'measure' | 'accountId' | 'source'
 >;
 
 /** Um registro de avanço numa meta numérica ou de poupança. */
@@ -111,6 +124,8 @@ export interface Task {
   seriesId?: string;
   /** Quando concluída, marca também a subtask da meta. */
   link?: TaskGoalLink;
+  /** Quantas vezes foi empurrada para depois do dia previsto (para achar as "tarefas zumbis"). */
+  postponed?: number;
   completedAt?: string;
   createdAt: string;
 }

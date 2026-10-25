@@ -3,7 +3,8 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { CalendarDays, Clock, ListChecks, Settings, Timer, type LucideIcon } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import { cn } from '@/lib/cn';
-import { toISODate } from '@/lib/dates';
+import { startOfWeekISO, toISODate } from '@/lib/dates';
+import { useAgendaWeek } from '@/features/agenda/agendaStore';
 import { useFinanceStore } from '@/features/finance/store';
 import { useAuthStore } from '@/features/sync/authStore';
 import { LoginScreen } from '@/features/sync/LoginScreen';
@@ -16,7 +17,6 @@ import { AgendaTab } from './tabs/AgendaTab';
 import { ClockView } from './tabs/ClockView';
 import { PomodoroTab } from './tabs/PomodoroTab';
 import { TasksTab } from './tabs/TasksTab';
-import { useAgendaRefresh } from './useAgendaRefresh';
 import { useFreeRotation } from './useFreeRotation';
 import { useNow } from './useNow';
 import { useWakeLock } from './useWakeLock';
@@ -117,7 +117,7 @@ function PanelShell() {
   const minute = useNow(60_000);
   const today = toISODate(new Date(minute));
   usePanelTheme(minute);
-  useAgendaRefresh(today);
+  useAgendaWeek(startOfWeekISO(today));
   useTimerEngine(today);
 
   const status = usePanelStore((s) => s.timer.status);

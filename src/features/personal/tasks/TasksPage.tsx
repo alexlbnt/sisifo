@@ -24,6 +24,7 @@ import { TaskItem } from './TaskItem';
 
 export const PLANNING_TABS = [
   { to: '/personal/tasks', label: 'Tarefas' },
+  { to: '/personal/week', label: 'Semana' },
   { to: '/personal/goals', label: 'Metas' },
 ];
 

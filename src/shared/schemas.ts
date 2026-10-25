@@ -129,6 +129,13 @@ export const goalSchema = z.object({
   unit: text(20).optional(),
   measure: z.enum(['sum', 'last']).optional(),
   accountId: id.optional(),
+  source: z
+    .discriminatedUnion('type', [
+      z.object({ type: z.literal('exercise'), exercise: text(120) }),
+      z.object({ type: z.literal('workouts'), kind: workoutKind.optional() }),
+      z.object({ type: z.literal('habit'), habitId: id }),
+    ])
+    .optional(),
   createdAt: timestamp,
 });
 
@@ -164,6 +171,7 @@ export const taskSchema = z.object({
   repeat: taskRepeatSchema.optional(),
   seriesId: id.optional(),
   link: z.object({ goalId: id, subtaskId: id }).optional(),
+  postponed: z.number().int().min(0).max(10_000).optional(),
   completedAt: timestamp.optional(),
   createdAt: timestamp,
 });
