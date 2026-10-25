@@ -31,6 +31,14 @@ function Splash() {
   );
 }
 
+/** O Modo Painel é outra entrada (painel.html, com manifest próprio): sai do app para ela. */
+function ToPanel() {
+  useEffect(() => {
+    window.location.replace('/painel.html');
+  }, []);
+  return <Splash />;
+}
+
 export function App() {
   useApplyTheme();
   const phase = useAuthStore((s) => s.phase);
@@ -52,6 +60,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="painel" element={<ToPanel />} />
         <Route element={<AppLayout />}>
           <Route index element={<TodayPage />} />
           <Route path="finance" element={<FinanceOverviewPage />} />

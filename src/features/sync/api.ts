@@ -1,3 +1,4 @@
+import type { AgendaResponse } from '@/shared/agenda';
 import type { SessionStatus, SyncRequest, SyncResponse } from '@/shared/sync';
 
 /** Falha de rede (offline, servidor fora) ou resposta que não é da nossa API. */
@@ -43,4 +44,6 @@ export const api = {
   logout: () => request<SessionStatus>('/api/session', { method: 'DELETE' }),
   sync: (payload: SyncRequest) =>
     request<SyncResponse>('/api/sync', { method: 'POST', body: JSON.stringify(payload) }),
+  agenda: (date: string, timeZone: string) =>
+    request<AgendaResponse>(`/api/agenda?date=${date}&tz=${encodeURIComponent(timeZone)}`),
 };

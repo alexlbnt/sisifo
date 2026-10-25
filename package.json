@@ -26,6 +26,7 @@
     "@prisma/client": "^7.10.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "ical.js": "^2.2.1",
     "lucide-react": "^1.54.0",
     "pg": "^8.23.1",
     "react": "^19.3.0",

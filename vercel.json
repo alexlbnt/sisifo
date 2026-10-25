@@ -4,6 +4,10 @@
   "buildCommand": "npm run build",
   "rewrites": [
     {
+      "source": "/painel",
+      "destination": "/painel.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

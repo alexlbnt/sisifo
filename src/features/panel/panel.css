@@ -1,0 +1,231 @@
+/*
+ * Modo Painel: tela fixa vista de longe, num celular deitado ou em pé.
+ *
+ * Tudo escala com a tela: a fonte da raiz cresce com o menor lado (vmin), e o
+ * Tailwind (rem) acompanha. Os números grandes usam clamp() com vw e vh juntos
+ * para caber nas duas orientações. Só opacity/transform nas transições: o
+ * aparelho é antigo.
+ */
+
+html {
+  font-size: clamp(16px, 10px + 1.6vmin, 24px);
+  /* Nada de rolagem lateral nem "esticar" a página. */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Mais contraste que o app: o painel é lido a dois metros. */
+.panel {
+  --ink-2: #333c38;
+  --ink-3: #56605b;
+  --focus: #c2412d;
+  --focus-soft: #fbe4df;
+  --short: #1b7349;
+  --short-soft: #dff0e6;
+  --long: #2e4a9e;
+  --long-soft: #e2e7f6;
+}
+
+.dark .panel {
+  --bg: #000000;
+  --surface: #0f1311;
+  --surface-2: #171c1a;
+  --ink: #f4f7f5;
+  --ink-2: #c3ccc7;
+  --ink-3: #9aa5a0;
+  --focus: #ff8a73;
+  --focus-soft: #3d1d17;
+  --short: #6ad3a0;
+  --short-soft: #13301f;
+  --long: #9fb1f5;
+  --long-soft: #1d2442;
+}
+
+.panel-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  /* vh para Chrome antigo; dvh desconta a barra do navegador quando ela aparece. */
+  height: 100vh;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.panel-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  /* Rolagem vertical com o navegador; o gesto lateral troca de aba. */
+  touch-action: pan-y;
+}
+
+.panel-nav {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid var(--line);
+}
+
+@media (orientation: landscape) {
+  /* Deitado, a altura é preciosa: a navegação vira um trilho à direita. */
+  .panel-shell {
+    flex-direction: row;
+  }
+  .panel-nav {
+    flex-direction: column;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+
+.panel-fade {
+  animation: panel-fade 0.18s ease-out;
+}
+@keyframes panel-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ───────── Pomodoro ───────── */
+
+.pomo-layout {
+  display: grid;
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+}
+@media (orientation: landscape) {
+  .pomo-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+.pomo-timer {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-size: clamp(3.5rem, min(24vw, 26vh), 14rem);
+}
+@media (orientation: landscape) {
+  .pomo-timer {
+    font-size: clamp(3rem, min(17vw, 38vh), 14rem);
+  }
+}
+
+.phase-focus {
+  --phase: var(--focus);
+  --phase-soft: var(--focus-soft);
+}
+.phase-short {
+  --phase: var(--short);
+  --phase-soft: var(--short-soft);
+}
+.phase-long {
+  --phase: var(--long);
+  --phase-soft: var(--long-soft);
+}
+
+.pomo-bar {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--phase-soft);
+  overflow: hidden;
+}
+.pomo-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--phase);
+  transform-origin: left;
+  /* Anda 1s por vez, sem animação contínua. */
+  transition: transform 1s linear;
+}
+
+/* ───────── Relógio ───────── */
+
+.clock-time {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-size: clamp(4rem, min(30vw, 34vh), 20rem);
+}
+@media (orientation: landscape) {
+  .clock-time {
+    font-size: clamp(4rem, min(24vw, 52vh), 20rem);
+  }
+}
+
+.clock-layout {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+@media (orientation: landscape) {
+  .clock-layout {
+    flex-direction: row;
+    gap: 3rem;
+    text-align: left;
+  }
+}
+
+/* ───────── Agenda e tarefas ───────── */
+
+.split-layout {
+  display: grid;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+}
+@media (orientation: landscape) {
+  .split-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+.task-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (orientation: landscape) and (min-width: 600px) {
+  .task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-fade {
+    animation: none;
+  }
+  .pomo-bar > span {
+    transition: none;
+  }
+}

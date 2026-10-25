@@ -14,7 +14,7 @@ export default defineConfig({
     VitePWA({
       // O usuário decide quando atualizar (aviso "Nova versão disponível").
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'painel.webmanifest'],
       manifest: {
         id: '/',
         name: 'Sísifo',
@@ -75,7 +75,27 @@ export default defineConfig({
         importScripts: ['/push-sw.js'],
       },
     }),
+    {
+      // O plugin do PWA põe o manifest do app em toda página; o painel tem o seu.
+      name: 'sisifo-panel-manifest',
+      enforce: 'post',
+      apply: 'build',
+      transformIndexHtml: {
+        order: 'post',
+        handler: (html, ctx) =>
+          ctx.path.endsWith('/painel.html') ? html.replace(/<link rel="manifest" href="\/manifest\.webmanifest"[^>]*>/, '') : html,
+      },
+    },
   ],
+  build: {
+    rollupOptions: {
+      // Modo Painel: entrada própria, com manifest em tela cheia e orientação livre (public/painel.webmanifest).
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        painel: fileURLToPath(new URL('./painel.html', import.meta.url)),
+      },
+    },
+  },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

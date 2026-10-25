@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Sísifo Painel: Pomodoro, agenda e tarefas numa tela sempre ligada." />
+    <!-- O painel troca o valor conforme o tema do horário. -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- Manifest próprio: tela cheia e orientação livre, sem mexer no app principal (retrato). -->
+    <link rel="manifest" href="/painel.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Sísifo Painel</title>
+    <script>
+      // Tema antes do React montar: sem clarão branco à noite.
+      try {
+        var raw = localStorage.getItem('sisifo:panel');
+        var s = raw ? JSON.parse(raw).state.settings : {};
+        var mode = s.theme || 'auto';
+        var mins = function (t) { var p = t.split(':'); return +p[0] * 60 + +p[1]; };
+        var d = new Date(), now = d.getHours() * 60 + d.getMinutes();
+        var a = mins(s.darkFrom || '19:00'), b = mins(s.darkTo || '07:00');
+        var night = a === b ? false : a < b ? now >= a && now < b : now >= a || now < b;
+        if (mode === 'dark' || (mode === 'auto' && night)) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/panel-main.tsx"></script>
+  </body>
+</html>

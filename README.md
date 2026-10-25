@@ -76,10 +76,11 @@ src/
 │   │   ├── goals/ tasks/ habits/ training/
 │   ├── settings/               # Tema, backup, configurações
 │   ├── sync/                   # Login, motor de sincronização, indicador de status
+│   ├── panel/                  # Modo Painel: Pomodoro, agenda, tarefas, relógio (entrada painel.html)
 │   └── pwa/                    # Instalação, atualização
 ├── shared/                     # Schemas Zod e contrato da sincronização (usados também pela API)
 └── lib/                        # money (centavos), dates (ISO), cn, id
-api/                            # Vercel Functions: session, sync, push, push-test e notify (cron)
+api/                            # Vercel Functions: session, sync, agenda, push, push-test e notify (cron)
 server/                         # Prisma, autenticação, regras da sincronização
 prisma/                         # schema.prisma e migrations
 ```
@@ -118,6 +119,24 @@ Configuração em `vite.config.ts` (`vite-plugin-pwa`). Os ícones estão em `pu
 - Vibração ao concluir: no iPhone usa o interruptor do iOS 18 (`src/lib/haptics.ts`); em versões antigas, não vibra.
 
 > O service worker só roda no build de produção. Para testar localmente, use `npm run build && npm run preview`. No celular, a instalação exige HTTPS, ou seja, o deploy na Vercel.
+
+## Modo Painel
+
+Uma tela para um celular fixo na mesa, sempre ligado: **Pomodoro**, **agenda** e **tarefas**, mais um **relógio** que entra sozinho quando ninguém toca. Fica em `/painel` (`painel.html`) e é instalado como um app separado, com manifest próprio (`public/painel.webmanifest`): tela cheia e livre para girar. O app principal continua travado em retrato.
+
+- **Instalar no Android:** abra `/painel` no Chrome, entre com a senha, vá em Ajustes (engrenagem) → **Instalar o painel**. Em Configurações do app principal há um atalho.
+- **Abas:** deslize para os lados ou use o trilho de ícones. Elas giram sozinhas a cada X segundos (ajustável, dá para desligar). Com o Pomodoro rodando, o painel fica nele e volta para ele 20 s depois de um toque em outra aba.
+- **Pomodoro:** 25/5 com pausa longa de 15 a cada 4 focos (tudo ajustável). O tempo é calculado pela hora de término, não por contagem; tela travada, aba suspensa ou recarga não perdem nada (o estado fica em `sisifo:panel`). Fim de etapa: bipe e vibração. Dá para ligar o foco a uma tarefa; o tempo dedicado aparece na aba Tarefas.
+- **Agenda:** Google Calendar pelo endereço secreto iCal (`GOOGLE_ICAL_URL`, só no servidor; a rota `/api/agenda` exige login e devolve só título, horário e local) mais as tarefas do Sísifo com horário de hoje. Atualiza a cada 5 minutos, só com a tela visível. Sem sincronização, mostra só as tarefas.
+- **Tarefas:** pendentes por prazo, atrasadas em vermelho e as de hoje em destaque. Um toque conclui; por 5 s o mesmo toque desfaz.
+- **Relógio:** após N minutos sem toque (e sem Pomodoro ativo). Clima pelo Open-Meteo (sem chave), com a localização do aparelho arredondada a ~1 km.
+- **Tema:** escuro automático entre os horários escolhidos (padrão 19h–7h).
+- **Tela ligada:** Screen Wake Lock enquanto o painel está visível; sem suporte, segue sem ele. Deixe o aparelho no carregador.
+- **Atualização:** o painel instala versões novas sozinho quando está no relógio e sem Pomodoro.
+
+Código em `src/features/panel/`; a leitura do iCal fica em `server/agenda.ts`.
+
+> Depois de uma recarga, o navegador só libera som e vibração após o primeiro toque na tela.
 
 ## Sincronização e login
 

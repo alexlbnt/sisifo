@@ -5,6 +5,7 @@ import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
 import { NotificationsCard } from '@/features/notifications/NotificationsCard';
+import { PanelCard } from '@/features/panel/PanelCard';
 import { InstallCard } from '@/features/pwa/InstallCard';
 import { ShortcutsCard } from '@/features/shortcuts/ShortcutsCard';
 import { useAuthStore } from '@/features/sync/authStore';
@@ -45,6 +46,8 @@ export function SettingsPage() {
         <ShortcutsCard />
 
         <InstallCard />
+
+        <PanelCard />
 
         <Card title="Aparência">
           <ThemeSelector />

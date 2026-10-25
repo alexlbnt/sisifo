@@ -1,0 +1,21 @@
+{
+  "id": "/painel.html",
+  "name": "Sísifo Painel",
+  "short_name": "Painel",
+  "description": "Pomodoro, agenda e tarefas do Sísifo numa tela sempre ligada.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/painel.html",
+  "scope": "/painel",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["productivity"],
+  "icons": [
+    { "src": "/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
