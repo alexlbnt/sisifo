@@ -1,8 +1,11 @@
 import { useId, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Ruins } from '@/components/ui';
 import { Logo } from '@/components/layout/Logo';
 import { useAuthStore } from './authStore';
+
+/** Faixa do meio da tela (texto e senha): as colunas quase somem ali. */
+const behindForm = (_x: number, y: number) => (y > 0.3 && y < 0.78 ? 0.4 : 1);
 
 export function LoginScreen() {
   const id = useId();
@@ -28,8 +31,10 @@ export function LoginScreen() {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col bg-bg px-4 pt-[max(env(safe-area-inset-top),2rem)] pb-[max(env(safe-area-inset-bottom),2rem)]">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+    <main className="relative isolate grid min-h-dvh bg-bg lg:grid-cols-2">
+      {/* Celular: ruínas atrás do formulário, mais apagadas na faixa do campo de senha. */}
+      <Ruins kind="login" mask={behindForm} className="fixed inset-0 -z-10 h-dvh w-full lg:hidden" />
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-4 pt-[max(env(safe-area-inset-top),2rem)] pb-[max(env(safe-area-inset-bottom),2rem)]">
         <Logo className="mb-10" />
         <h1 className="text-[28px] leading-tight font-semibold">Entre para continuar</h1>
         <p className="mt-1.5 text-sm text-ink-2">
@@ -78,6 +83,10 @@ export function LoginScreen() {
           </Button>
         </form>
       </div>
+      {/* Computador: formulário à esquerda, ruínas à direita, como na referência. */}
+      <aside aria-hidden className="relative hidden border-l border-line lg:block">
+        <Ruins kind="login" className="absolute inset-0 h-full w-full" />
+      </aside>
     </main>
   );
 }
