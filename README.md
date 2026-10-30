@@ -97,10 +97,32 @@ prisma/                         # schema.prisma e migrations
 - **Categorias e áreas editáveis** (Configurações → Categorias e áreas). As de fábrica têm ids fixos (`food`, `routine`...). Uma categoria ou área em uso só pode ser arquivada: ela some dos formulários, mas continua nos itens antigos.
 - **Tarefa ligada a meta:** concluir a tarefa marca a etapa da meta, e o inverso também vale.
 - **Migrações:** cada store tem `version` e `migrate` no `persist`. Ao mudar o formato dos dados, suba a versão e converta ali.
+- **Armazenamento no aparelho:** veja a seção abaixo.
 - **Contas:** lançamentos sem `accountId` são da conta principal (`main`). Transferência não é receita nem despesa. Compra no cartão é despesa na data da compra; pagar a fatura é uma transferência da conta para o cartão, e os pagamentos quitam as faturas mais antigas primeiro.
 - **Parcelas:** uma compra em N vezes vira N lançamentos mensais com o mesmo `installment.groupId` (o valor é dividido sem perder centavos).
 - **Tarefa que se repete:** ao concluir, a próxima é criada com id `<série>~<data>`, então dois aparelhos não a duplicam.
 - **Hábitos de quantidade e dias pulados** sobem como registros por dia (`habitLogs` com `value` ou `skip`).
+
+## Armazenamento no aparelho
+
+Os dados ficam no **IndexedDB** (banco `sisifo`, tabela `kv`): sem o limite de ~5 MB do localStorage e sem travar a tela ao gravar. O código fica em `src/lib/storage.ts`.
+
+| Onde | Chaves |
+|---|---|
+| IndexedDB | `sisifo:finance`, `sisifo:personal`, `sisifo:agenda`, `sisifo:sync` (cursor, shadow e fila do motor), `sisifo:sync-orphans` |
+| localStorage | `sisifo:theme`, `sisifo:auth`, `sisifo:install-dismissed`, `sisifo:panel`, `sisifo:workout-run` e o marcador `sisifo:storage` |
+
+As do localStorage são pequenas, e o tema e o Modo Painel são lidos antes do React (no `index.html` e no `painel.html`).
+
+- **Migração única:** na primeira abertura depois da atualização, cada chave é copiada do localStorage, relida e conferida. Só então sai de lá, e o marcador `sisifo:storage` passa a `idb`. Se alguma cópia não conferir, nada é apagado, o que foi copiado é desfeito e o app segue no localStorage.
+- **Sem IndexedDB** (aba privada, Safari antigo): segue no localStorage, como antes.
+- **IndexedDB que não abre depois da migração:** o app abre só em memória, sem gravar nada, e mostra um aviso. Assim os dados de exemplo nunca vão parar no lugar dos verdadeiros. Em Configurações → Dados aparece onde os dados estão.
+- **Leitura assíncrona:** o React só monta depois que as stores e o estado do motor foram lidos (`src/app/boot.ts`). Antes disso, uma chave não aceita gravação; senão o estado inicial do `persist` apagaria o que está salvo.
+
+**Reverter, se der problema em produção:**
+
+1. Aparelhos com sincronização: voltar o deploy na Vercel é seguro. A versão antiga encontra o localStorage vazio, puxa tudo do servidor e substitui os dados do aparelho.
+2. Aparelhos só locais: antes de voltar o deploy, publique um hotfix com `FORCE_LOCAL = true` em `src/lib/storage.ts`. Ele copia o IndexedDB de volta para o localStorage (marcador `local`) e passa a usá-lo. Depois de abrir o app uma vez em cada aparelho, a versão antiga já encontra os dados. Ao voltar `FORCE_LOCAL` para `false`, a migração copia o localStorage (o mais novo) para o IndexedDB de novo.
 
 ## App instalável (PWA)
 

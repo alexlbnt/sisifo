@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { todayISO, type ISODate } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { persistInitialState } from '@/lib/persistNow';
+import { localData } from '@/lib/storage';
 import { defaultAreas } from './defaultAreas';
 import { createPersonalMock } from './mock';
 import { nextOccurrence } from './recurrence';
@@ -436,6 +437,7 @@ export const usePersonalStore = create<PersonalStore>()(
     {
       name: PERSONAL_STORAGE_KEY,
       version: 3,
+      storage: createJSONStorage(() => localData),
       partialize: ({
         areas,
         goals,

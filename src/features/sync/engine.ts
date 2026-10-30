@@ -1,10 +1,12 @@
 import { create } from 'zustand';
+import { localData } from '@/lib/storage';
 import { MAX_CHANGES_PER_REQUEST, type SyncChange } from '@/shared/sync';
 import { api, HttpError, NetworkError } from './api';
 import {
   applyRecords,
   clearLocalData,
   hasLocalData,
+  loadOrphans,
   recordKey,
   snapshot,
   subscribeLocalChanges,
@@ -53,23 +55,27 @@ interface EngineState {
 
 const emptyState = (): EngineState => ({ cursor: null, linked: false, shadow: {}, outbox: {}, lastSyncAt: null });
 
-function load(): EngineState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...emptyState(), ...(JSON.parse(raw) as EngineState) } : emptyState();
-  } catch {
-    return emptyState();
-  }
+let state = emptyState();
+let loading: Promise<void> | null = null;
+
+/** Lê o estado do motor (e os órfãos) do aparelho. Uma vez só; o resto do motor espera isto. */
+export function loadSyncState(): Promise<void> {
+  loading ??= (async () => {
+    try {
+      const raw = await localData.getItem(STORAGE_KEY);
+      if (raw) state = { ...emptyState(), ...(JSON.parse(raw) as EngineState) };
+    } catch {
+      // Estado ilegível: começa do zero (a primeira sincronização refaz tudo).
+    }
+    await loadOrphans();
+    useSyncStore.setState({ pending: Object.keys(state.outbox).length, lastSyncAt: state.lastSyncAt });
+  })();
+  return loading;
 }
 
-let state = load();
-
 function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Sem espaço/acesso ao storage: segue em memória nesta sessão.
-  }
+  // Sem espaço/acesso ao storage: segue em memória nesta sessão.
+  void localData.setItem(STORAGE_KEY, JSON.stringify(state));
   useSyncStore.setState({ pending: Object.keys(state.outbox).length, lastSyncAt: state.lastSyncAt });
 }
 
@@ -231,6 +237,7 @@ function stop() {
 
 /** Liga a sincronização (depois do login, ou ao abrir o app já logado). */
 export async function startSync(handlers: { onUnauthorized: () => void }): Promise<void> {
+  await loadSyncState();
   onUnauthorized = handlers.onUnauthorized;
   enabled = true;
   save();
@@ -303,11 +310,7 @@ export async function resolveFirstLink(choice: 'upload' | 'empty'): Promise<void
 export function resetSync() {
   stop();
   state = emptyState();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // ignora
-  }
+  void localData.removeItem(STORAGE_KEY);
   applyingRemote = true;
   try {
     clearLocalData();

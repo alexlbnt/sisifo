@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { addMonthsISO, todayISO } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { persistInitialState } from '@/lib/persistNow';
+import { localData } from '@/lib/storage';
 import { defaultAccounts, splitInstallments } from './accounts';
 import { defaultCategories } from './defaultCategories';
 import { createFinanceMock } from './mock';
@@ -192,6 +193,7 @@ export const useFinanceStore = create<FinanceStore>()(
     {
       name: FINANCE_STORAGE_KEY,
       version: 3,
+      storage: createJSONStorage(() => localData),
       partialize: ({ transactions, recurring, categories, accounts, budgets }): FinanceState => ({
         transactions,
         recurring,

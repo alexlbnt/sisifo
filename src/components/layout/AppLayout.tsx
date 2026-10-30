@@ -11,6 +11,7 @@ import { SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
 import { BottomNav } from './MobileNav';
+import { StorageWarning } from './StorageWarning';
 import { NAV_GROUPS, SETTINGS_ITEM, type NavItem } from './nav';
 import { usePullToRefresh, type PullState } from './usePullToRefresh';
 import { ThemeCycleButton, ThemeSelector } from './ThemeToggle';
@@ -117,6 +118,7 @@ export function AppLayout() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
+        <StorageWarning />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">
           <Suspense
             fallback={<div className="h-40 animate-pulse rounded-2xl bg-surface-2" aria-label="Carregando" />}

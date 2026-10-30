@@ -6,6 +6,7 @@ import { defaultAreas } from '@/features/personal/defaultAreas';
 import { usePersonalStore } from '@/features/personal/store';
 import { habitTarget } from '@/features/personal/selectors';
 import type { Goal, Habit, PersonalState, Subtask } from '@/features/personal/types';
+import { localData } from '@/lib/storage';
 import { COLLECTION_NAMES, type CollectionName, type SyncChange } from '@/shared/sync';
 
 /**
@@ -74,25 +75,23 @@ export const habitLogId = (habitId: string, date: string) => `${habitId}:${date}
 const ORPHANS_KEY = 'sisifo:sync-orphans';
 let orphans: Map<string, LocalRecord> | null = null;
 
-function loadOrphans(): Map<string, LocalRecord> {
-  if (orphans) return orphans;
+/** Lê os órfãos guardados no aparelho. O motor espera isto antes de começar. */
+export async function loadOrphans(): Promise<void> {
   try {
-    const raw = localStorage.getItem(ORPHANS_KEY);
+    const raw = await localData.getItem(ORPHANS_KEY);
     orphans = new Map(raw ? (Object.entries(JSON.parse(raw)) as [string, LocalRecord][]) : []);
   } catch {
     orphans = new Map();
   }
-  return orphans;
 }
+
+const currentOrphans = () => orphans ?? new Map<string, LocalRecord>();
 
 function saveOrphans(next: Map<string, LocalRecord>) {
   orphans = next;
-  try {
-    if (next.size) localStorage.setItem(ORPHANS_KEY, JSON.stringify(Object.fromEntries(next)));
-    else localStorage.removeItem(ORPHANS_KEY);
-  } catch {
-    // Sem storage: os órfãos ficam só em memória nesta sessão.
-  }
+  // Sem storage, os órfãos ficam só em memória nesta sessão.
+  if (next.size) void localData.setItem(ORPHANS_KEY, JSON.stringify(Object.fromEntries(next)));
+  else void localData.removeItem(ORPHANS_KEY);
 }
 
 /* ───────── Store → registros ───────── */
@@ -127,7 +126,7 @@ export function toRecords(finance: FinanceState, personal: PersonalState): Map<s
 /** Fotografia de todos os itens locais (inclusive órfãos), indexada por "coleção|id". */
 export function snapshot(): Map<string, LocalRecord> {
   const records = toRecords(useFinanceStore.getState(), usePersonalStore.getState());
-  for (const [key, record] of loadOrphans()) if (!records.has(key)) records.set(key, record);
+  for (const [key, record] of currentOrphans()) if (!records.has(key)) records.set(key, record);
   return records;
 }
 

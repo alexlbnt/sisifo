@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { CircleCheck, Download, Eraser, Layers, RotateCcw, Tags, Upload } from 'lucide-react';
 import { Button, Card, ConfirmDialog, PageHeader } from '@/components/ui';
+import { useStorageMode } from '@/components/layout/StorageWarning';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
@@ -10,6 +11,7 @@ import { InstallCard } from '@/features/pwa/InstallCard';
 import { ShortcutsCard } from '@/features/shortcuts/ShortcutsCard';
 import { useAuthStore } from '@/features/sync/authStore';
 import { SyncCard } from '@/features/sync/SyncCard';
+import { cn } from '@/lib/cn';
 import { clearAllData, downloadBackup, importBackup, restoreSampleData } from './backup';
 
 type Notice = { tone: 'good' | 'danger'; text: string } | null;
@@ -118,6 +120,7 @@ export function SettingsPage() {
               Apagar todos os dados
             </Button>
           </div>
+          <StorageLine />
         </Card>
       </div>
 
@@ -148,4 +151,17 @@ export function SettingsPage() {
       />
     </>
   );
+}
+
+const STORAGE_LABELS = {
+  idb: 'Guardados neste aparelho (IndexedDB).',
+  local: 'Guardados neste aparelho (localStorage: o navegador não ofereceu IndexedDB).',
+  memory: 'Não foi possível abrir os dados deste aparelho nesta sessão. Feche o app e abra de novo.',
+} as const;
+
+/** Onde ficam os dados: ajuda a conferir a migração para o IndexedDB. */
+function StorageLine() {
+  const mode = useStorageMode();
+  if (!mode) return null;
+  return <p className={cn('mt-3 text-xs', mode === 'memory' ? 'text-warn' : 'text-ink-3')}>{STORAGE_LABELS[mode]}</p>;
 }

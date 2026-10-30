@@ -6,7 +6,7 @@ import { useFinanceStore } from '@/features/finance/store';
 import { useApplyTheme } from '@/features/settings/themeStore';
 import { useAuthStore } from '@/features/sync/authStore';
 import { LoginScreen } from '@/features/sync/LoginScreen';
-import { Logo } from '@/components/layout/Logo';
+import { Splash } from '@/components/layout/Splash';
 
 /** Carrega a página sob demanda, para o gráfico e o resto não pesarem na tela inicial. */
 function page<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
@@ -24,14 +24,6 @@ const TrainingPage = page(() => import('@/features/personal/training/TrainingPag
 const WorkoutScreen = page(() => import('@/features/personal/training/WorkoutScreen'), 'WorkoutScreen');
 const ReviewPage = page(() => import('@/features/review/ReviewPage'), 'ReviewPage');
 const SettingsPage = page(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
-
-function Splash() {
-  return (
-    <div className="grid min-h-dvh place-items-center bg-bg" aria-label="Carregando">
-      <Logo />
-    </div>
-  );
-}
 
 /** O Modo Painel é outra entrada (painel.html, com manifest próprio): sai do app para ela. */
 function ToPanel() {

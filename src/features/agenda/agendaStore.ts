@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { addDaysISO, type ISODate } from '@/lib/dates';
+import { localData } from '@/lib/storage';
 import type { AgendaEvent } from '@/shared/agenda';
 import { api } from '@/features/sync/api';
 import { useAuthStore } from '@/features/sync/authStore';
@@ -40,7 +41,7 @@ export const useAgendaStore = create<AgendaStore>()(
           return { weeks: Object.fromEntries(keep.map((k) => [k, weeks[k]!])) };
         }),
     }),
-    { name: 'sisifo:agenda', version: 1 },
+    { name: 'sisifo:agenda', version: 1, storage: createJSONStorage(() => localData) },
   ),
 );
 
