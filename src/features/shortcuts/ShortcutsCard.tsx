@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Check, Copy, KeyRound, Smartphone, Trash2 } from 'lucide-react';
+import widgetScript from '../../../scripts/widget/sisifo-widget.js?raw';
 import { Button, Card, ConfirmDialog, IconButton, Input } from '@/components/ui';
 import { useAuthStore } from '@/features/sync/authStore';
 import { fmt } from '@/lib/dates';
@@ -57,6 +58,26 @@ function CopyField({ label, value, secret }: { label: string; value: string; sec
   );
 }
 
+/** Copia o script do widget com o endereço deste Sísifo já preenchido (a chave nunca vai junto). */
+function CopyScriptButton({ origin }: { origin: string }) {
+  const [copied, setCopied] = useState(false);
+  const script = widgetScript.replace("const SISIFO_URL = '';", `const SISIFO_URL = '${origin}';`);
+  return (
+    <Button
+      variant="secondary"
+      icon={copied ? Check : Copy}
+      onClick={() => {
+        void navigator.clipboard?.writeText(script).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }}
+    >
+      {copied ? 'Script copiado' : 'Copiar script'}
+    </Button>
+  );
+}
+
 function Step({ n, children }: { n: number; children: ReactNode }) {
   return (
     <li className="flex gap-2.5">
@@ -108,7 +129,7 @@ export function ShortcutsCard() {
   return (
     <Card
       title="Atalhos do iPhone"
-      description="Registre gastos e tarefas ou veja o resumo do dia sem abrir o app: com dois toques nas costas do celular, pela Siri ou por um widget de Atalhos."
+      description="Registre gastos e tarefas ou veja o resumo do dia sem abrir o app: com dois toques nas costas do celular, pela Siri ou num widget na tela inicial e de bloqueio."
     >
       {!synced ? (
         <p className="flex items-start gap-2 text-sm text-ink-3">
@@ -204,8 +225,42 @@ export function ShortcutsCard() {
             </ol>
           </details>
 
+          <details className="rounded-lg border border-line">
+            <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium">4. Widget do dia na tela inicial e de bloqueio (opcional)</summary>
+            <ol className="flex flex-col gap-3 px-3 pt-1 pb-3 text-sm text-ink-2">
+              <Step n={1}>
+                Instale o app <b>Scriptable</b> (gratuito, na App Store). O widget do app Atalhos só executa atalhos; para ver os números
+                sem tocar, é o Scriptable que desenha o widget.
+              </Step>
+              <Step n={2}>
+                Copie o script. No Scriptable, toque em <b>+</b>, cole e dê o nome <b>Sísifo</b>. O endereço deste Sísifo já vai junto; a
+                chave, não.
+                <div className="mt-2">
+                  <CopyScriptButton origin={origin} />
+                </div>
+              </Step>
+              <Step n={3}>
+                Toque em <b>▶︎</b> e cole a chave do passo 1: ela fica no Keychain do iPhone, nunca no script. Depois, <b>Ver médio</b> mostra
+                como vai ficar.
+              </Step>
+              <Step n={4}>
+                <b>Tela inicial:</b> segure um espaço vazio → <b>+</b> → <b>Scriptable</b> → escolha o tamanho → <b>Adicionar</b>. Segure o
+                widget → <b>Editar widget</b> → <b>Script: Sísifo</b>.
+              </Step>
+              <Step n={5}>
+                <b>Tela de bloqueio:</b> segure a tela bloqueada → <b>Personalizar</b> → <b>Tela Bloqueada</b> → toque na área dos widgets →{' '}
+                <b>Scriptable</b> → escolha o formato → toque nele → <b>Script: Sísifo</b>.
+              </Step>
+            </ol>
+            <p className="px-3 pb-3 text-xs text-ink-3">
+              Mostra as tarefas e hábitos que faltam, quanto dá para gastar hoje e o próximo compromisso. Quem decide quando atualizar é o
+              iOS (em geral, de 15 a 60 minutos). Sem internet, aparece a última leitura com ⚠︎ e a hora. Revogar a chave também desliga o
+              widget.
+            </p>
+          </details>
+
           <details className="rounded-lg border border-line" open={Boolean(created)}>
-            <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium">4. Dois toques nas costas do iPhone</summary>
+            <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium">5. Dois toques nas costas do iPhone</summary>
             <ol className="flex flex-col gap-3 px-3 pt-1 pb-3 text-sm text-ink-2">
               <Step n={1}>
                 Abra <b>Ajustes → Acessibilidade → Toque → Tocar Atrás</b>.
@@ -223,7 +278,7 @@ export function ShortcutsCard() {
             </ol>
             <p className="px-3 pb-3 text-xs text-ink-3">
               Funciona do iPhone 8 em diante e precisa de internet. Os mesmos atalhos funcionam pela Siri ("E aí Siri, registrar no Sísifo") e
-              num widget do app Atalhos na tela de início.
+              como botões no widget do app Atalhos (ele executa o atalho e mostra a resposta numa notificação).
             </p>
           </details>
         </div>

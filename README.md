@@ -220,6 +220,18 @@ Rotas com chave (`Authorization: Bearer sis_...`), porque o app Atalhos não man
 - `POST /api/capture`: registra um lançamento ou uma tarefa a partir de uma frase (corpo JSON `{ "text": "café 8,50" }` ou texto puro). Usa o mesmo parser da captura rápida (`src/shared/capture.ts`).
 - `GET /api/summary`: saldo disponível, quanto dá para gastar hoje, o que falta e o que vence.
 - Com `?format=text`, a resposta é texto puro, pronta para "Mostrar Notificação"; `?tz=` define o fuso (padrão: São Paulo).
+- Com `?format=widget`, um JSON enxuto para o widget (versão `v: 1`): tarefas e hábitos que faltam, até 3 tarefas e 3 hábitos, quanto dá para gastar hoje, o próximo compromisso e uma linha curta (`line`) para a tela de bloqueio e a Siri.
+
+### Widget do dia (Scriptable)
+
+O widget nativo do app Atalhos **só executa atalhos**: não mostra dados, e ver o resumo exige um toque (a resposta aparece numa notificação). Para ver os números na tela inicial ou de bloqueio sem tocar, o Sísifo traz um script para o app gratuito **[Scriptable](https://scriptable.app)**: `scripts/widget/sisifo-widget.js`.
+
+- **Instalar:** Configurações → Atalhos do iPhone → **4. Widget do dia** → **Copiar script**. A cópia já leva o endereço deste Sísifo. No Scriptable, cole num script novo chamado `Sísifo` e toque em ▶︎ para informar a chave `sis_...`. A chave fica no **Keychain** do iPhone, nunca no arquivo nem no repositório.
+- **Tamanhos:** pequeno, médio e grande na tela inicial. Retangular, circular e em linha na tela de bloqueio.
+- **Atualização:** quem decide é o iOS (em geral de 15 a 60 minutos; o script pede 30). Sem internet, aparece a última leitura com ⚠︎ e a hora.
+- **Próximo compromisso:** vem do Google Calendar (`GOOGLE_ICAL_URL`); sem ele, ou se ele não responder, é a próxima tarefa de hoje com horário.
+- **Limitações:** o Scriptable é de terceiros, e a última versão na App Store é de setembro de 2024. Ele usa só as APIs mais estáveis (`Request`, `ListWidget`, `Keychain`), mas confira se abre no seu iOS. Se um dia parar, os atalhos "Resumo do Sísifo" e o Toque Traseiro continuam funcionando.
+- **Mudar o formato:** suba `v` em `widgetSummary` (`src/shared/summary.ts`) só se quebrar o script antigo. Ele avisa para copiar de novo quando recebe uma versão mais nova do que entende.
 
 As chaves são criadas e revogadas em **Configurações → Atalhos do iPhone**, que também traz o passo a passo dos atalhos e do Toque Traseiro (Ajustes → Acessibilidade → Toque → Tocar Atrás). O banco guarda só o hash (tabela `api_tokens`). Itens criados por essas rotas entram na sincronização e aparecem nos aparelhos na próxima rodada.
 

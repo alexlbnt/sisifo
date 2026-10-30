@@ -3,6 +3,7 @@
  * Calculado no servidor a partir dos registros sincronizados.
  * Também usado pela API: só imports relativos com `.js`.
  */
+import type { AgendaEvent } from './agenda.js';
 import { addDays, lastDayOfMonth } from './dates.js';
 import { billsOn, pendingHabits, type DigestRecord } from './digest.js';
 import { DEFAULT_ACCOUNT_ID } from './schemas.js';
@@ -119,3 +120,95 @@ export function summaryText(s: DaySummary): string {
   return lines.join('\n');
 }
 
+/* ───────── Widget (Scriptable) ───────── */
+
+/** Formato enxuto para o widget da tela inicial e de bloqueio (`?format=widget`). */
+export interface WidgetSummary {
+  /** Versão do formato: o script avisa se for mais nova do que ele entende. */
+  v: 1;
+  today: string;
+  /** Tarefas de hoje que faltam, atrasadas e hábitos pendentes. */
+  tasks: number;
+  overdue: number;
+  habits: number;
+  /** Até 3 tarefas de hoje que faltam, as com horário primeiro. */
+  nextTasks: { title: string; time?: string }[];
+  /** Até 3 hábitos que faltam hoje. */
+  pendingHabits: string[];
+  /** Quanto dá para gastar hoje (null quando o mês não tem receita). */
+  allowance: string | null;
+  allowanceCents: number | null;
+  /** Próximo compromisso: da agenda do Google ou, sem ela, a próxima tarefa com horário. */
+  next: { time: string; title: string } | null;
+  /** Uma linha curta (tela de bloqueio, Siri). */
+  line: string;
+}
+
+const WIDGET_LIST = 3;
+/** Reais inteiros: na linha curta, os centavos só ocupam espaço. */
+const moneyShort = (cents: number) => `R$ ${Math.floor(cents / 100).toLocaleString('pt-BR')}`;
+
+function clockIn(ms: number, timeZone: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms);
+}
+
+interface TaskRec {
+  title: string;
+  status: string;
+  date: string;
+  time?: string;
+}
+
+/**
+ * Resumo para o widget. `events` é a agenda de hoje (null sem Google Calendar
+ * configurado ou se ele não respondeu): aí o próximo compromisso é a próxima
+ * tarefa com horário.
+ */
+export function widgetSummary(
+  s: DaySummary,
+  records: DigestRecord[],
+  today: string,
+  now: number,
+  timeZone: string,
+  events: AgendaEvent[] | null,
+): WidgetSummary {
+  const todo = records
+    .filter((r) => r.collection === 'tasks' && r.data)
+    .map((r) => r.data as TaskRec)
+    .filter((t) => t.date === today && t.status !== 'done')
+    .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99') || a.title.localeCompare(b.title));
+
+  let next: WidgetSummary['next'] = null;
+  if (events) {
+    const upcoming = events.find((e) => !e.allDay && e.end > now);
+    const allDay = events.find((e) => e.allDay);
+    if (upcoming) next = { time: clockIn(upcoming.start, timeZone), title: upcoming.title };
+    else if (allDay) next = { time: 'dia todo', title: allDay.title };
+  }
+  if (!next) {
+    const nowClock = clockIn(now, timeZone);
+    const timed = todo.find((t) => t.time && t.time >= nowClock);
+    if (timed) next = { time: timed.time!, title: timed.title };
+  }
+
+  const parts = [
+    s.pendingTasks && plural(s.pendingTasks, 'tarefa', 'tarefas'),
+    s.pendingHabits.length && plural(s.pendingHabits.length, 'hábito', 'hábitos'),
+  ].filter(Boolean) as string[];
+  if (!parts.length) parts.push('Tudo feito');
+  if (s.dailyAllowanceCents !== null) parts.push(`${moneyShort(s.dailyAllowanceCents)} hoje`);
+
+  return {
+    v: 1,
+    today,
+    tasks: s.pendingTasks,
+    overdue: s.overdueTasks,
+    habits: s.pendingHabits.length,
+    nextTasks: todo.slice(0, WIDGET_LIST).map((t) => (t.time ? { title: t.title, time: t.time } : { title: t.title })),
+    pendingHabits: s.pendingHabits.slice(0, WIDGET_LIST),
+    allowance: s.dailyAllowanceCents === null ? null : money(s.dailyAllowanceCents),
+    allowanceCents: s.dailyAllowanceCents,
+    next,
+    line: parts.join(' · '),
+  };
+}
