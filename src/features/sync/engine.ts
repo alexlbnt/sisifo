@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { reportError } from '@/features/errors/report';
 import { localData } from '@/lib/storage';
 import { MAX_CHANGES_PER_REQUEST, type CollectionName, type SyncChange } from '@/shared/sync';
 import { api, HttpError, NetworkError } from './api';
@@ -29,6 +30,8 @@ interface SyncUiState {
   pending: number;
   lastSyncAt: string | null;
   error: string | null;
+  /** Rodadas seguidas com erro (não conta "sem internet"). Com 3, o app mostra um aviso. */
+  failures: number;
 }
 
 export const useSyncStore = create<SyncUiState>()(() => ({
@@ -36,6 +39,7 @@ export const useSyncStore = create<SyncUiState>()(() => ({
   pending: 0,
   lastSyncAt: null,
   error: null,
+  failures: 0,
 }));
 
 /* ───────── Estado persistido do motor ───────── */
@@ -158,10 +162,16 @@ function handleError(error: unknown) {
     return;
   }
   const offline = error instanceof NetworkError || !navigator.onLine;
-  useSyncStore.setState({
-    status: offline ? 'offline' : 'error',
-    error: offline ? null : error instanceof Error ? error.message : 'Erro ao sincronizar.',
-  });
+  if (offline) {
+    useSyncStore.setState({ status: 'offline', error: null });
+    return;
+  }
+  useSyncStore.setState((s) => ({
+    status: 'error',
+    error: error instanceof Error ? error.message : 'Erro ao sincronizar.',
+    failures: s.failures + 1,
+  }));
+  reportError('sync', error);
 }
 
 /** Envia o que mudou e traz o que mudou nos outros aparelhos, até zerar a fila. */
@@ -195,7 +205,7 @@ export async function syncNow(): Promise<void> {
     }
     state.lastSyncAt = new Date().toISOString();
     save();
-    useSyncStore.setState({ status: 'synced' });
+    useSyncStore.setState({ status: 'synced', failures: 0 });
   } catch (error) {
     handleError(error);
   } finally {
@@ -345,7 +355,7 @@ export function resetSync() {
   } finally {
     applyingRemote = false;
   }
-  useSyncStore.setState({ status: 'disabled', pending: 0, lastSyncAt: null, error: null });
+  useSyncStore.setState({ status: 'disabled', pending: 0, lastSyncAt: null, error: null, failures: 0 });
 }
 
 export function disableSync() {

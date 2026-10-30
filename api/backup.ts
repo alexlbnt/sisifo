@@ -1,5 +1,6 @@
 import { createBackup, isBlobConfigured, latestBackup, readBackup } from '../server/backup.js';
 import { isDatabaseConfigured } from '../server/db.js';
+import { logServerError } from '../server/errors.js';
 import { errorResponse, isAuthenticated, json } from '../server/http.js';
 
 /**
@@ -42,6 +43,8 @@ async function runScheduled(): Promise<Response> {
     return json({ saved: true, ...(await createBackup()) });
   } catch (error) {
     console.error('[backup] falhou:', error instanceof Error ? error.message : error);
+    // Ninguém vê o cron falhar: fica em Configurações → Erros recentes.
+    await logServerError('/api/backup', error);
     return errorResponse(500, 'Falha ao gravar o backup.');
   }
 }

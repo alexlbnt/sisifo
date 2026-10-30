@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { loadLocalData } from '@/app/boot';
 import { Splash } from '@/components/layout/Splash';
+import { installErrorReporting } from '@/features/errors/report';
 import { PanelApp } from '@/features/panel/PanelApp';
 // Importado cedo para capturar o convite de instalação antes do React montar.
 import '@/features/pwa/installStore';
@@ -9,6 +10,7 @@ import { requestPersistentStorage } from '@/features/pwa/useAppBadge';
 import './index.css';
 import '@/features/panel/panel.css';
 
+installErrorReporting();
 requestPersistentStorage();
 
 const root = createRoot(document.getElementById('root')!);

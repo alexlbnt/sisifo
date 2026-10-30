@@ -9,19 +9,27 @@ import type { SyncResponse } from '@/shared/sync';
 vi.mock('./api', () => ({
   api: { sync: vi.fn() },
   HttpError: class HttpError extends Error {
-    status = 500;
+    constructor(
+      public status: number,
+      message: string,
+    ) {
+      super(message);
+    }
   },
   NetworkError: class NetworkError extends Error {},
 }));
+
+vi.mock('@/features/errors/report', () => ({ reportError: vi.fn() }));
 
 vi.mock('./diff', async (importOriginal) => {
   const original = await importOriginal<typeof import('./diff')>();
   return { ...original, detectChanges: vi.fn(original.detectChanges) };
 });
 
-const { api } = await import('./api');
+const { api, HttpError } = await import('./api');
 const { detectChanges } = await import('./diff');
-const { startSync } = await import('./engine');
+const { startSync, syncNow, useSyncStore } = await import('./engine');
+const { reportError } = await import('@/features/errors/report');
 const { useFinanceStore } = await import('@/features/finance/store');
 
 const sync = vi.mocked(api.sync);
@@ -77,5 +85,20 @@ describe('motor: só as coleções alteradas', () => {
     detect.mockClear();
     await vi.advanceTimersByTimeAsync(10 * 60_000);
     expect(detect.mock.calls.some((call) => call[3] === undefined)).toBe(true);
+  });
+});
+
+describe('motor: erro de sincronização visível e registrado', () => {
+  // Continua do teste anterior: o motor já está ligado e vinculado.
+  it('conta as falhas seguidas, registra cada uma e zera ao voltar', async () => {
+    sync.mockRejectedValue(new HttpError(500, 'Erro no servidor.'));
+    for (let i = 0; i < 3; i++) await syncNow();
+    expect(useSyncStore.getState()).toMatchObject({ status: 'error', error: 'Erro no servidor.', failures: 3 });
+    expect(vi.mocked(reportError)).toHaveBeenCalledTimes(3);
+    expect(vi.mocked(reportError).mock.calls[0]![0]).toBe('sync');
+
+    sync.mockResolvedValue(empty);
+    await syncNow();
+    expect(useSyncStore.getState()).toMatchObject({ status: 'synced', failures: 0 });
   });
 });

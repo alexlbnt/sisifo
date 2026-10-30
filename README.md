@@ -83,7 +83,7 @@ src/
 │   └── pwa/                    # Instalação, atualização
 ├── shared/                     # Schemas Zod e contrato da sincronização (usados também pela API)
 └── lib/                        # money (centavos), dates (ISO), cn, id
-api/                            # Vercel Functions: session, sync, agenda, push, push-test, notify e backup (crons)
+api/                            # Vercel Functions: session, sync, agenda, push, push-test, log, notify e backup (crons)
 server/                         # Prisma, autenticação, regras da sincronização
 prisma/                         # schema.prisma e migrations
 ```
@@ -199,6 +199,19 @@ Todo **domingo às 6h UTC** (3h de Brasília), o Vercel Cron chama `/api/backup`
 - **Funções:** o plano Hobby aceita até 12 arquivos em `api/`. O backup usa um arquivo só para o cron e para o app (`api/backup.ts`).
 
 Código em `api/backup.ts`, `server/backup.ts` e `src/shared/backup.ts`. A conversão dos registros em backup usa `src/shared/records.ts`, a mesma do app.
+
+## Erros
+
+O app registra os próprios erros, sem serviço externo: **Configurações → Erros recentes** mostra o que quebrou, onde, em que versão e em que tipo de aparelho.
+
+- **O que é capturado:** erros não tratados da tela (`window.onerror`), promessas rejeitadas sem tratamento, falhas do motor de sincronização e falhas do cron de backup (`kind`: `window`, `promise`, `sync`, `api`).
+- **O que é enviado:** a mensagem, a pilha (só as linhas de código), a rota sem query string, a versão do `package.json` e o aparelho resumido (ex.: `iOS 18 · Safari · instalado`).
+- **O que não é enviado:** valores, títulos ou notas. Números com 3 dígitos ou mais, valores em R$, e-mails e textos com mais de 24 caracteres entre aspas são trocados antes de sair do aparelho, e o servidor limpa de novo (`src/shared/errors.ts`).
+- **Limites:** o mesmo erro sai no máximo uma vez a cada 5 minutos e no máximo 20 por abertura do app. No servidor, são 30 envios por IP a cada 10 minutos (só o hash do IP é guardado), e erros iguais somam num contador. Ficam as 500 linhas mais recentes.
+- **Sincronização com erro:** o ícone ganha um ponto vermelho. A partir de 3 rodadas seguidas com erro, aparece uma faixa no topo que leva às Configurações.
+- Sem sincronização (sem login ou sem servidor), os erros ficam só no console.
+
+Código em `src/features/errors/`, `api/log.ts` e `server/errors.ts`. A tabela é `error_logs` (migration `0004_error_logs`, aplicada no build da Vercel).
 
 ## Atalhos do iPhone
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { CloudAlert, CloudCheck, CloudOff, CloudUpload, RefreshCw, type LucideIcon } from 'lucide-react';
+import { ChevronRight, CloudAlert, CloudCheck, CloudOff, CloudUpload, RefreshCw, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from './authStore';
 import { useSyncStore, type SyncStatus } from './engine';
@@ -28,10 +28,12 @@ export function useSyncLabel() {
 export function SyncStatusLine() {
   const phase = useAuthStore((s) => s.phase);
   const { icon: Icon, text, tone, status } = useSyncLabel();
+  const error = useSyncStore((s) => s.error);
   if (phase !== 'ready') return null;
   return (
     <Link
       to="/settings"
+      title={status === 'error' && error ? error : undefined}
       className={cn('flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs hover:bg-surface-2', tone)}
       aria-live="polite"
     >
@@ -51,9 +53,35 @@ export function SyncStatusIcon() {
       to="/settings"
       aria-label={text}
       title={text}
-      className={cn('inline-flex size-10 items-center justify-center rounded-lg hover:bg-surface-2', tone)}
+      className={cn('relative inline-flex size-10 items-center justify-center rounded-lg hover:bg-surface-2', tone)}
     >
       <Icon className={cn('size-4', status === 'syncing' && 'animate-spin')} aria-hidden />
+      {status === 'error' && <span className="absolute top-2 right-2 size-2 rounded-full bg-expense" aria-hidden />}
+    </Link>
+  );
+}
+
+/** A partir de tantas rodadas seguidas com erro, o aviso sai do ícone e vai para o topo da tela. */
+const FAILURES_TO_WARN = 3;
+
+/** Faixa no topo quando a sincronização falha de novo e de novo (antes passava despercebido). */
+export function SyncErrorBanner() {
+  const phase = useAuthStore((s) => s.phase);
+  const status = useSyncStore((s) => s.status);
+  const failures = useSyncStore((s) => s.failures);
+  const error = useSyncStore((s) => s.error);
+  if (phase !== 'ready' || status !== 'error' || failures < FAILURES_TO_WARN) return null;
+  return (
+    <Link
+      to="/settings"
+      role="alert"
+      className="flex items-start gap-2 bg-danger-soft px-4 py-2.5 text-sm text-expense hover:underline"
+    >
+      <CloudAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span className="min-w-0 flex-1">
+        A sincronização está falhando{error ? `: ${error}` : '.'} O que você fizer continua salvo neste aparelho.
+      </span>
+      <ChevronRight className="mt-0.5 size-4 shrink-0" aria-hidden />
     </Link>
   );
 }

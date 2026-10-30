@@ -68,3 +68,27 @@ model ApiToken {
 
   @@map("api_tokens")
 }
+
+/// Erro registrado pelo app ou pela API. Sem dados pessoais: só a mensagem
+/// (limpa de números e textos longos), a pilha, a rota, a versão e o tipo de aparelho.
+model ErrorLog {
+  id          String   @id
+  /// Mesmo erro (tipo + mensagem + primeira linha da pilha) soma em `count`.
+  fingerprint String   @unique
+  /// window | promise | sync | api
+  kind        String
+  message     String
+  stack       String?
+  route       String?
+  appVersion  String?
+  device      String?
+  /// SHA-256 do IP de quem enviou por último: só para o limite de envios.
+  ipHash      String
+  count       Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  lastSeenAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([ipHash, lastSeenAt])
+  @@index([lastSeenAt])
+  @@map("error_logs")
+}

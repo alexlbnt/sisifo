@@ -5,6 +5,7 @@ import { useStorageMode } from '@/components/layout/StorageWarning';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
+import { ErrorsCard } from '@/features/errors/ErrorsCard';
 import { NotificationsCard } from '@/features/notifications/NotificationsCard';
 import { PanelCard } from '@/features/panel/PanelCard';
 import { InstallCard } from '@/features/pwa/InstallCard';
@@ -112,6 +113,8 @@ export function SettingsPage() {
           )}
           {synced && <AutoBackup />}
         </Card>
+
+        <ErrorsCard />
 
         <Card title="Dados" description="Recomece do zero ou volte aos dados de exemplo.">
           <div className="flex flex-wrap gap-2">

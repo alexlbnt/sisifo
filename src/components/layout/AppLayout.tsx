@@ -7,7 +7,7 @@ import { useAppBadge } from '@/features/pwa/useAppBadge';
 import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { UpdateToast } from '@/features/pwa/UpdateToast';
 import { FirstLinkDialog } from '@/features/sync/FirstLinkDialog';
-import { SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
+import { SyncErrorBanner, SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
 import { BottomNav } from './MobileNav';
@@ -119,6 +119,7 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
         <StorageWarning />
+        <SyncErrorBanner />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">
           <Suspense
             fallback={<div className="h-40 animate-pulse rounded-2xl bg-surface-2" aria-label="Carregando" />}
