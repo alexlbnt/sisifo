@@ -32,6 +32,31 @@ const PERSONAL_LISTS = [
 type FinanceList = (typeof FINANCE_LISTS)[number];
 type PersonalList = (typeof PERSONAL_LISTS)[number];
 
+/**
+ * Que coleções cada parte das stores alimenta. Meta e hábito levam junto os
+ * registros filhos (etapas e marcações), que saem de dentro deles.
+ */
+const FINANCE_SLICES: Record<keyof FinanceState, readonly CollectionName[]> = {
+  transactions: ['transactions'],
+  recurring: ['recurring'],
+  categories: ['categories'],
+  accounts: ['accounts'],
+  budgets: ['settings'],
+};
+const PERSONAL_SLICES: Record<keyof PersonalState, readonly CollectionName[]> = {
+  areas: ['areas'],
+  goals: ['goals', 'subtasks'],
+  goalEntries: ['goalEntries'],
+  reviews: ['reviews'],
+  tasks: ['tasks'],
+  habits: ['habits', 'habitLogs'],
+  workoutPlans: ['workoutPlans'],
+  workoutSessions: ['workoutSessions'],
+};
+
+/** Escopo de uma varredura: só estas coleções. */
+export type Scope = ReadonlySet<CollectionName>;
+
 const BUDGETS_ID = 'budgets';
 
 /** Coleções que só existem por causa de outra; não contam como "dado próprio" do aparelho. */
@@ -96,37 +121,51 @@ function saveOrphans(next: Map<string, LocalRecord>) {
 
 /* ───────── Store → registros ───────── */
 
-/** Registros de um estado. Função pura: é o inverso de `rebuild`. */
-export function toRecords(finance: FinanceState, personal: PersonalState): Map<string, LocalRecord> {
+/**
+ * Registros de um estado. Função pura: é o inverso de `rebuild`. Com `scope`,
+ * só monta as coleções pedidas (e nem lê as outras partes das stores).
+ */
+export function toRecords(finance: FinanceState, personal: PersonalState, scope?: Scope): Map<string, LocalRecord> {
   const records = new Map<string, LocalRecord>();
-  const put = (collection: CollectionName, id: string, data: unknown) =>
-    records.set(recordKey(collection, id), { collection, id, data });
+  const wants = (name: CollectionName) => !scope || scope.has(name);
+  const put = (collection: CollectionName, id: string, data: unknown) => {
+    if (wants(collection)) records.set(recordKey(collection, id), { collection, id, data });
+  };
 
-  for (const name of FINANCE_LISTS) for (const item of finance[name]) put(name, item.id, item);
-  for (const name of PERSONAL_LISTS) for (const item of personal[name]) put(name, item.id, item);
+  for (const name of FINANCE_LISTS) if (wants(name)) for (const item of finance[name]) put(name, item.id, item);
+  for (const name of PERSONAL_LISTS) if (wants(name)) for (const item of personal[name]) put(name, item.id, item);
 
-  for (const { subtasks, ...goal } of personal.goals) {
-    put('goals', goal.id, goal);
-    for (const st of subtasks) put('subtasks', st.id, { ...st, goalId: goal.id } satisfies SubtaskRecord);
-  }
-  for (const { completions, amounts = {}, skips = {}, ...habit } of personal.habits) {
-    put('habits', habit.id, habit);
-    const dates = new Set([...completions, ...Object.keys(amounts), ...Object.keys(skips)]);
-    for (const date of dates) {
-      const log: HabitLogRecord = { habitId: habit.id, date };
-      if (amounts[date] !== undefined) log.value = amounts[date];
-      if (skips[date] !== undefined) log.skip = skips[date];
-      put('habitLogs', habitLogId(habit.id, date), log);
+  if (wants('goals') || wants('subtasks')) {
+    for (const { subtasks, ...goal } of personal.goals) {
+      put('goals', goal.id, goal);
+      for (const st of subtasks) put('subtasks', st.id, { ...st, goalId: goal.id } satisfies SubtaskRecord);
     }
   }
-  put('settings', BUDGETS_ID, finance.budgets);
+  if (wants('habits') || wants('habitLogs')) {
+    for (const { completions, amounts = {}, skips = {}, ...habit } of personal.habits) {
+      put('habits', habit.id, habit);
+      const dates = new Set([...completions, ...Object.keys(amounts), ...Object.keys(skips)]);
+      for (const date of dates) {
+        const log: HabitLogRecord = { habitId: habit.id, date };
+        if (amounts[date] !== undefined) log.value = amounts[date];
+        if (skips[date] !== undefined) log.skip = skips[date];
+        put('habitLogs', habitLogId(habit.id, date), log);
+      }
+    }
+  }
+  if (wants('settings')) put('settings', BUDGETS_ID, finance.budgets);
   return records;
 }
 
-/** Fotografia de todos os itens locais (inclusive órfãos), indexada por "coleção|id". */
-export function snapshot(): Map<string, LocalRecord> {
-  const records = toRecords(useFinanceStore.getState(), usePersonalStore.getState());
-  for (const [key, record] of currentOrphans()) if (!records.has(key)) records.set(key, record);
+/**
+ * Fotografia dos itens locais (inclusive órfãos), indexada por "coleção|id".
+ * Sem `scope`, de tudo; com ele, só das coleções que mudaram.
+ */
+export function snapshot(scope?: Scope): Map<string, LocalRecord> {
+  const records = toRecords(useFinanceStore.getState(), usePersonalStore.getState(), scope);
+  for (const [key, record] of currentOrphans()) {
+    if (!records.has(key) && (!scope || scope.has(record.collection))) records.set(key, record);
+  }
   return records;
 }
 
@@ -290,9 +329,32 @@ export function hasLocalData(): boolean {
   return false;
 }
 
-export function subscribeLocalChanges(listener: () => void): () => void {
-  const a = useFinanceStore.subscribe(listener);
-  const b = usePersonalStore.subscribe(listener);
+/**
+ * Coleções afetadas por uma alteração da store, comparando cada parte por
+ * referência (as stores nunca alteram arrays no lugar). Uma parte que não está
+ * no mapa devolve 'all': na dúvida, varre tudo.
+ */
+export function changedCollections<S extends object>(
+  state: S,
+  prev: S,
+  slices: Partial<Record<keyof S, readonly CollectionName[]>>,
+): Set<CollectionName> | 'all' {
+  const changed = new Set<CollectionName>();
+  for (const key of Object.keys(state) as (keyof S)[]) {
+    const value = state[key];
+    if (typeof value === 'function' || value === prev[key]) continue;
+    const collections = slices[key];
+    if (!collections) return 'all';
+    for (const c of collections) changed.add(c);
+  }
+  return changed;
+}
+
+export type LocalChange = ReadonlySet<CollectionName> | 'all';
+
+export function subscribeLocalChanges(listener: (changed: LocalChange) => void): () => void {
+  const a = useFinanceStore.subscribe((state, prev) => listener(changedCollections(state, prev, FINANCE_SLICES)));
+  const b = usePersonalStore.subscribe((state, prev) => listener(changedCollections(state, prev, PERSONAL_SLICES)));
   return () => {
     a();
     b();

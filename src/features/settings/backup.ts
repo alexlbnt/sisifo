@@ -8,6 +8,7 @@ import { createPersonalMock } from '@/features/personal/mock';
 import { defaultAreas } from '@/features/personal/defaultAreas';
 import { usePersonalStore, withDefaults as withPersonalDefaults } from '@/features/personal/store';
 import type { PersonalState } from '@/features/personal/types';
+import { requestFullScan } from '@/features/sync/engine';
 import { todayISO } from '@/lib/dates';
 import {
   accountSchema,
@@ -113,12 +114,14 @@ export async function importBackup(file: File): Promise<ImportResult> {
   }
   useFinanceStore.getState().replaceAll(withFinanceDefaults(parsed.data.finance));
   usePersonalStore.getState().replaceAll(withPersonalDefaults(parsed.data.personal as Partial<PersonalState>) as PersonalState);
+  requestFullScan();
   return { ok: true };
 }
 
 export function restoreSampleData() {
   useFinanceStore.getState().replaceAll(createFinanceMock());
   usePersonalStore.getState().replaceAll(createPersonalMock());
+  requestFullScan();
 }
 
 export function clearAllData() {
@@ -141,4 +144,5 @@ export function clearAllData() {
   };
   useFinanceStore.getState().replaceAll(emptyFinance);
   usePersonalStore.getState().replaceAll(emptyPersonal);
+  requestFullScan();
 }

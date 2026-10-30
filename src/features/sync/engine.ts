@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { localData } from '@/lib/storage';
-import { MAX_CHANGES_PER_REQUEST, type SyncChange } from '@/shared/sync';
+import { MAX_CHANGES_PER_REQUEST, type CollectionName, type SyncChange } from '@/shared/sync';
 import { api, HttpError, NetworkError } from './api';
 import {
   applyRecords,
@@ -10,6 +10,7 @@ import {
   recordKey,
   snapshot,
   subscribeLocalChanges,
+  type LocalChange,
 } from './collections';
 import { detectChanges, hashValue, selectRemoteToApply, type Outbox, type Shadow } from './diff';
 
@@ -94,9 +95,28 @@ let onUnauthorized: () => void = () => {};
 const DETECT_DELAY = 400;
 const PUSH_DELAY = 1500;
 const POLL_MS = 60_000;
+/** A cada tantas rodadas do poll (~10 min), compara tudo: rede de segurança do rastreio por coleção. */
+const FULL_SCAN_EVERY = 10;
+
+/**
+ * Coleções alteradas desde a última comparação. A varredura completa vale no
+ * início, no primeiro vínculo, depois de importar um backup e de tempos em tempos.
+ */
+let dirty = new Set<CollectionName>();
+let fullScan = true;
+let polls = 0;
+
+/** Pede para a próxima comparação olhar tudo (ex.: depois de importar um backup). */
+export function requestFullScan() {
+  fullScan = true;
+}
 
 function captureLocalChanges() {
-  const { shadow, changes } = detectChanges(snapshot(), state.shadow, new Date().toISOString());
+  const scope = fullScan ? undefined : dirty;
+  if (scope && !scope.size) return 0;
+  const { shadow, changes } = detectChanges(snapshot(scope), state.shadow, new Date().toISOString(), scope);
+  dirty = new Set();
+  fullScan = false;
   state.shadow = shadow;
   for (const change of changes) state.outbox[recordKey(change.collection, change.id)] = change;
   if (changes.length) save();
@@ -201,8 +221,10 @@ async function pullEverything(): Promise<{ changes: SyncChange[]; cursor: string
   return { changes: all, cursor };
 }
 
-function onLocalChange() {
+function onLocalChange(changed: LocalChange) {
   if (applyingRemote || !enabled || !state.linked) return;
+  if (changed === 'all') fullScan = true;
+  else for (const c of changed) dirty.add(c);
   clearTimeout(detectTimer);
   detectTimer = setTimeout(() => {
     if (captureLocalChanges()) scheduleSync();
@@ -219,7 +241,10 @@ function listen() {
   window.addEventListener('online', onOnline);
   document.addEventListener('visibilitychange', onVisible);
   clearInterval(interval);
-  interval = setInterval(() => void syncNow(), POLL_MS);
+  interval = setInterval(() => {
+    if (++polls % FULL_SCAN_EVERY === 0) fullScan = true;
+    void syncNow();
+  }, POLL_MS);
 }
 
 function stop() {
@@ -240,6 +265,7 @@ export async function startSync(handlers: { onUnauthorized: () => void }): Promi
   await loadSyncState();
   onUnauthorized = handlers.onUnauthorized;
   enabled = true;
+  fullScan = true;
   save();
 
   if (!state.linked) {
@@ -301,6 +327,7 @@ export async function resolveFirstLink(choice: 'upload' | 'empty'): Promise<void
     }
   }
   state = { ...state, linked: true, shadow: {}, outbox: {} };
+  fullScan = true;
   save();
   listen();
   await syncNow();
@@ -310,6 +337,7 @@ export async function resolveFirstLink(choice: 'upload' | 'empty'): Promise<void
 export function resetSync() {
   stop();
   state = emptyState();
+  fullScan = true;
   void localData.removeItem(STORAGE_KEY);
   applyingRemote = true;
   try {

@@ -166,6 +166,7 @@ Código em `src/features/panel/`; a leitura do iCal fica em `server/agenda.ts`.
 ## Sincronização e login
 
 - **Local-first:** cada alteração é gravada no aparelho na hora. Um motor (`src/features/sync/engine.ts`) detecta o que mudou e envia em segundo plano, a cada alteração, ao voltar a internet, ao reabrir o app e a cada minuto.
+- **Só o que mudou:** o motor marca as coleções cujas partes da store mudaram (`changedCollections`, comparando por referência) e compara só elas. Meta e hábito levam junto as etapas e as marcações. A varredura completa roda ao ligar a sincronização, no primeiro vínculo, depois de importar ou apagar dados e a cada ~10 minutos, como rede de segurança.
 - **Conflitos:** a alteração mais recente vence, item a item. Exclusões viram "lápides" para os outros aparelhos saberem.
 - **Etapas e marcações são registros próprios:** cada etapa de meta (`subtasks`) e cada dia marcado de um hábito (`habitLogs`, id `<hábito>:<data>`) sobe separado da meta ou do hábito. Assim, marcar dias diferentes no celular e no computador não faz uma marcação apagar a outra. A ponte entre stores e registros fica em `src/features/sync/collections.ts` (`toRecords` / `rebuild`). Registros que chegam antes do item a que pertencem ficam guardados à parte até ele chegar.
 - **Primeiro login:** se o servidor já tem dados, eles substituem os do aparelho. Se o servidor está vazio, o app pergunta se envia os dados do aparelho ou começa do zero.

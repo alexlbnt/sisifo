@@ -50,6 +50,35 @@ describe('detectChanges', () => {
   });
 });
 
+describe('detectChanges com escopo (só as coleções que mudaram)', () => {
+  const now = '2026-10-30T12:00:00.000Z';
+  const tx = (id: string, data: unknown): [string, LocalRecord] => [`transactions|${id}`, { collection: 'transactions', id, data }];
+  const base = new Map([rec('1', { t: 'a' }), rec('2', { t: 'b' }), tx('9', { v: 1 })]);
+  const { shadow } = detectChanges(base, {}, now);
+
+  it('coleção fora do escopo não vira exclusão e o shadow dela passa adiante', () => {
+    const onlyTx = new Map([tx('9', { v: 2 })]);
+    const result = detectChanges(onlyTx, shadow, now, new Set(['transactions']));
+    expect(result.changes).toEqual([{ collection: 'transactions', id: '9', data: { v: 2 }, updatedAt: now }]);
+    expect(result.shadow['tasks|1']).toBe(shadow['tasks|1']);
+    expect(result.shadow['tasks|2']).toBe(shadow['tasks|2']);
+  });
+
+  it('exclusão dentro do escopo continua sendo detectada', () => {
+    const result = detectChanges(new Map([rec('1', { t: 'a' })]), shadow, now, new Set(['tasks']));
+    expect(result.changes).toEqual([{ collection: 'tasks', id: '2', data: null, updatedAt: now }]);
+    expect(result.shadow).not.toHaveProperty('tasks|2');
+    expect(result.shadow['transactions|9']).toBe(shadow['transactions|9']);
+  });
+
+  it('a varredura completa encontra o que o escopo não viu', () => {
+    // Uma tarefa mudou "por fora" (sem marcar a coleção como suja).
+    const changed = new Map([rec('1', { t: 'mudou' }), rec('2', { t: 'b' }), tx('9', { v: 1 })]);
+    expect(detectChanges(new Map([tx('9', { v: 1 })]), shadow, now, new Set(['transactions'])).changes).toHaveLength(0);
+    expect(detectChanges(changed, shadow, now).changes.map((c) => c.id)).toEqual(['1']);
+  });
+});
+
 describe('selectRemoteToApply', () => {
   const change = (id: string, data: unknown, updatedAt: string): SyncChange => ({
     collection: 'tasks',

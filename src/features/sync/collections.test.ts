@@ -5,7 +5,7 @@ import type { FinanceState } from '@/features/finance/types';
 import { defaultAreas } from '@/features/personal/defaultAreas';
 import type { Goal, Habit, PersonalState } from '@/features/personal/types';
 import type { CollectionName } from '@/shared/sync';
-import { rebuild, recordKey, toRecords, type LocalRecord } from './collections';
+import { changedCollections, rebuild, recordKey, toRecords, type LocalRecord } from './collections';
 import { detectChanges } from './diff';
 
 const finance = (): FinanceState => ({
@@ -173,5 +173,82 @@ describe('hábitos de quantidade e dias pulados na sincronização', () => {
     expect(records.get('habitLogs|h1:2026-10-07')?.data).toEqual({ habitId: 'h1', date: '2026-10-07', skip: 'Doente' });
     expect(records.get('habits|h1')?.data).not.toHaveProperty('amounts');
     expect(rebuild(records).personal.habits[0]).toEqual(water);
+  });
+});
+
+describe('só as coleções alteradas', () => {
+  const FINANCE_SLICES = { transactions: ['transactions'], budgets: ['settings'] } as const;
+  const PERSONAL_SLICES = { goals: ['goals', 'subtasks'], habits: ['habits', 'habitLogs'], tasks: ['tasks'] } as const;
+
+  it('mapeia cada parte da store para as suas coleções, com as filhas junto', () => {
+    const p = personal({ goals: [goal([])], habits: [habit([])] });
+    expect(changedCollections({ ...p, goals: [goal([])] }, p, PERSONAL_SLICES)).toEqual(new Set(['goals', 'subtasks']));
+    expect(changedCollections({ ...p, habits: [habit(['2026-10-05'])] }, p, PERSONAL_SLICES)).toEqual(new Set(['habits', 'habitLogs']));
+    const f = finance();
+    expect(changedCollections({ ...f, budgets: {} }, f, FINANCE_SLICES)).toEqual(new Set(['settings']));
+    expect(changedCollections(p, p, PERSONAL_SLICES)).toEqual(new Set());
+  });
+
+  it('parte que não está no mapa pede varredura completa', () => {
+    const p = personal();
+    expect(changedCollections({ ...p, workoutPlans: [] }, p, PERSONAL_SLICES)).toBe('all');
+  });
+
+  it('com escopo, nem lê as outras partes das stores', () => {
+    const forbidden = (state: object, allowed: string[]) =>
+      new Proxy(state, {
+        get(target, prop, receiver) {
+          if (typeof prop === 'string' && !allowed.includes(prop)) throw new Error(`leu ${prop}`);
+          return Reflect.get(target, prop, receiver);
+        },
+      });
+    const tx = { id: 't1', title: 'Café', amountCents: 850, type: 'expense', category: 'food', date: '2026-10-30', createdAt: 'x' };
+    const records = toRecords(
+      forbidden({ ...finance(), transactions: [tx] }, ['transactions']) as FinanceState,
+      forbidden(personal(), []) as PersonalState,
+      new Set(['transactions']),
+    );
+    expect([...records.keys()]).toEqual(['transactions|t1']);
+  });
+
+  it('com escopo, dá o mesmo que a fotografia completa naquelas coleções', () => {
+    const p = personal({
+      goals: [goal([{ id: 's1', title: 'Tema', done: true, order: 0 }])],
+      habits: [habit(['2026-10-05'])],
+    });
+    const full = toRecords(finance(), p);
+    const scope = new Set<CollectionName>(['goals', 'subtasks', 'settings']);
+    const scoped = toRecords(finance(), p, scope);
+    expect(scoped).toEqual(new Map([...full].filter(([, r]) => scope.has(r.collection))));
+  });
+
+  it('excluir uma meta exclui as etapas dela', () => {
+    const steps = [
+      { id: 's1', title: 'Tema', done: true, order: 0 },
+      { id: 's2', title: 'Escrever', done: false, order: 1 },
+    ];
+    const before = personal({ goals: [goal(steps)] });
+    const after = { ...before, goals: [] };
+    const { shadow } = detectChanges(toRecords(finance(), before), {}, 't0');
+    const scope = changedCollections(after, before, PERSONAL_SLICES);
+    if (scope === 'all') throw new Error('esperava escopo');
+    const { changes } = detectChanges(toRecords(finance(), after, scope), shadow, 't1', scope);
+    expect(changes.map((c) => `${c.collection}|${c.id}|${c.data}`).sort()).toEqual([
+      'goals|g1|null',
+      'subtasks|s1|null',
+      'subtasks|s2|null',
+    ]);
+  });
+
+  it('desmarcar um dia de hábito exclui só a marcação, sem mexer no hábito', () => {
+    const before = personal({ habits: [habit(['2026-10-05', '2026-10-06'])] });
+    const after = { ...before, habits: [habit(['2026-10-06'])] };
+    const { shadow } = detectChanges(toRecords(finance(), before), {}, 't0');
+    const scope = changedCollections(after, before, PERSONAL_SLICES);
+    if (scope === 'all') throw new Error('esperava escopo');
+    const { changes, shadow: next } = detectChanges(toRecords(finance(), after, scope), shadow, 't1', scope);
+    expect(changes).toEqual([{ collection: 'habitLogs', id: 'h1:2026-10-05', data: null, updatedAt: 't1' }]);
+    // O resto (tarefas, finanças, categorias) segue no shadow, sem virar exclusão.
+    expect(Object.keys(next).length).toBe(Object.keys(shadow).length - 1);
   });
 });

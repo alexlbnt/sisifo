@@ -1,5 +1,5 @@
-import type { SyncChange } from '@/shared/sync';
-import { parseKey, recordKey, type LocalRecord } from './collections';
+import type { CollectionName, SyncChange } from '@/shared/sync';
+import { parseKey, recordKey, type LocalRecord, type Scope } from './collections';
 
 /** JSON com chaves ordenadas: o Postgres (jsonb) reordena chaves, e o hash não pode mudar por isso. */
 export function stableStringify(value: unknown): string {
@@ -25,17 +25,27 @@ export function hashValue(value: unknown): string {
 export type Shadow = Record<string, string>;
 export type Outbox = Record<string, SyncChange>;
 
+/** Coleção de uma chave "coleção|id", sem montar objeto (roda para cada item do shadow). */
+const collectionOf = (key: string) => key.slice(0, key.indexOf('|'));
+
 /**
  * Compara a fotografia local com a última conhecida (`shadow`) e devolve
  * as alterações novas. Itens sumidos viram exclusões (`data: null`).
+ *
+ * Com `scope`, a fotografia é só daquelas coleções: as outras entradas do
+ * shadow passam adiante sem mudança e nunca viram exclusão.
  */
 export function detectChanges(
   current: Map<string, LocalRecord>,
   shadow: Shadow,
   now: string,
+  scope?: Scope,
 ): { shadow: Shadow; changes: SyncChange[] } {
+  const inScope = (key: string) => !scope || scope.has(collectionOf(key) as CollectionName);
   const next: Shadow = {};
   const changes: SyncChange[] = [];
+
+  if (scope) for (const key in shadow) if (!inScope(key)) next[key] = shadow[key]!;
 
   for (const [key, record] of current) {
     const hash = hashValue(record.data);
@@ -45,7 +55,7 @@ export function detectChanges(
     }
   }
   for (const key of Object.keys(shadow)) {
-    if (!(key in next)) {
+    if (!(key in next) && inScope(key)) {
       const { collection, id } = parseKey(key);
       changes.push({ collection, id, data: null, updatedAt: now });
     }
