@@ -8,10 +8,10 @@
 
 :root {
   color-scheme: light;
-  --bg: #eceee9;
+  --bg: #ebe7df;
   --surface: #ffffff;
-  --surface-2: #f5f6f3;
-  --line: #d9ddd5;
+  --surface-2: #f4f1ea;
+  --line: #d9d4c9;
   --ink: #1a201e;
   --ink-2: #4c5652;
   --ink-3: #737d78;
@@ -25,12 +25,16 @@
   --warn-soft: #fbefd9;
   --danger-soft: #f8e3e1;
   --good-soft: #dff0e6;
-  --slope: #c9cec5;
+  --slope: #cdc7bb;
+  /* Ruínas em pontilhado (components/ui/Ruins): pontos escuros sobre o mármore. */
+  --ruins: #2c2822;
+  --ruins-alpha: 0.5;
+  --ruins-backdrop-alpha: 0.3;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0f1311;
+  --bg: #0d0f0e;
   --surface: #171c1a;
   --surface-2: #1d2320;
   --line: #2a322f;
@@ -48,6 +52,9 @@
   --danger-soft: #3d201e;
   --good-soft: #17322a;
   --slope: #313a36;
+  --ruins: #e2e6e2;
+  --ruins-alpha: 0.6;
+  --ruins-backdrop-alpha: 0.32;
 }
 
 @theme inline {

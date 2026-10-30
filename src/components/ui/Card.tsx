@@ -11,7 +11,7 @@ interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
 
 export function Card({ title, description, action, flush, className, children, ...props }: CardProps) {
   return (
-    <section className={cn('rounded-2xl border border-line bg-surface', className)} {...props}>
+    <section className={cn('rounded-2xl border border-line bg-surface/92', className)} {...props}>
       {(title || action) && (
         <header className="flex items-start justify-between gap-3 px-5 pt-4 pb-1">
           <div className="min-w-0">

@@ -12,6 +12,7 @@ export { Modal } from './Modal';
 export { MonthSwitcher } from './MonthSwitcher';
 export { PageHeader } from './PageHeader';
 export { ProgressBar } from './ProgressBar';
+export { Ruins } from './Ruins';
 export { SectionTabs } from './SectionTabs';
 export { SegmentedControl } from './SegmentedControl';
 export { SwipeRow, type SwipeAction } from './SwipeRow';

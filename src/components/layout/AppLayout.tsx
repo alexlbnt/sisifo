@@ -8,6 +8,7 @@ import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { UpdateToast } from '@/features/pwa/UpdateToast';
 import { FirstLinkDialog } from '@/features/sync/FirstLinkDialog';
 import { SyncErrorBanner, SyncStatusIcon, SyncStatusLine } from '@/features/sync/SyncIndicator';
+import { Ruins } from '@/components/ui/Ruins';
 import { cn } from '@/lib/cn';
 import { Logo } from './Logo';
 import { BottomNav } from './MobileNav';
@@ -114,7 +115,9 @@ export function AppLayout() {
   useAppBadge();
   const pull = usePullToRefresh();
   return (
-    <div className="flex min-h-dvh">
+    <div className="relative isolate flex min-h-dvh">
+      {/* Colunas apagadas atrás de todas as telas (a tela Hoje põe o templo por cima). */}
+      <Ruins kind="backdrop" className="fixed top-0 left-0 -z-10 h-dvh w-full lg:left-60 lg:w-[calc(100%-15rem)]" />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
