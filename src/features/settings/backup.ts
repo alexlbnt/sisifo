@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { createFinanceMock } from '@/features/finance/mock';
 import { defaultAccounts } from '@/features/finance/accounts';
 import { defaultCategories } from '@/features/finance/defaultCategories';
@@ -10,59 +9,14 @@ import { usePersonalStore, withDefaults as withPersonalDefaults } from '@/featur
 import type { PersonalState } from '@/features/personal/types';
 import { requestFullScan } from '@/features/sync/engine';
 import { todayISO } from '@/lib/dates';
-import {
-  accountSchema,
-  areaSchema,
-  budgetsSchema,
-  categorySchema,
-  goalEntrySchema,
-  goalSchema,
-  habitSchema,
-  recurringRuleSchema,
-  taskSchema,
-  transactionSchema,
-  weeklyReviewSchema,
-  workoutPlanSchema,
-  workoutSessionSchema,
-} from '@/shared/schemas';
-
-// Categorias, áreas e a ordem das etapas são opcionais: backups da versão 1 não têm.
-// Na importação, o que faltar é completado pelos `withDefaults` das stores.
-const financeSchema = z.object({
-  transactions: z.array(transactionSchema),
-  recurring: z.array(recurringRuleSchema),
-  categories: z.array(categorySchema).optional(),
-  accounts: z.array(accountSchema).optional(),
-  budgets: budgetsSchema,
-});
-
-const personalSchema = z.object({
-  areas: z.array(areaSchema).optional(),
-  goals: z.array(goalSchema),
-  goalEntries: z.array(goalEntrySchema).optional(),
-  reviews: z.array(weeklyReviewSchema).optional(),
-  tasks: z.array(taskSchema),
-  habits: z.array(habitSchema),
-  workoutPlans: z.array(workoutPlanSchema),
-  workoutSessions: z.array(workoutSessionSchema),
-});
-
-const backupSchema = z.object({
-  app: z.literal('sisifo'),
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  exportedAt: z.string(),
-  finance: financeSchema,
-  personal: personalSchema,
-});
-
-export type Backup = z.infer<typeof backupSchema>;
+import { BACKUP_VERSION, backupSchema, type Backup } from '@/shared/backup';
 
 export function buildBackup(): Backup {
   const f = useFinanceStore.getState();
   const p = usePersonalStore.getState();
   return {
     app: 'sisifo',
-    version: 3,
+    version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     finance: {
       transactions: f.transactions,

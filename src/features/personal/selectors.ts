@@ -6,6 +6,7 @@ import {
   weekdayOf,
   type ISODate,
 } from '@/lib/dates';
+import { habitTarget } from '@/shared/records';
 import type {
   Goal,
   GoalEntry,
@@ -182,8 +183,7 @@ export function stalledTasks(tasks: Task[]): Task[] {
 export const isWeekly = (habit: Pick<Habit, 'frequency'>): boolean => habit.frequency === 'weekly';
 
 /** Meta diária: 1 nos hábitos de marcar; `target` nos de quantidade. */
-export const habitTarget = (habit: Pick<Habit, 'kind' | 'target'>): number =>
-  habit.kind === 'quantity' ? (habit.target && habit.target > 0 ? habit.target : 1) : 1;
+export { habitTarget };
 
 export function isSkipped(habit: Pick<Habit, 'skips'>, day: ISODate): boolean {
   return Boolean(habit.skips?.[day]);

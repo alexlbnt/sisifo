@@ -83,7 +83,7 @@ src/
 │   └── pwa/                    # Instalação, atualização
 ├── shared/                     # Schemas Zod e contrato da sincronização (usados também pela API)
 └── lib/                        # money (centavos), dates (ISO), cn, id
-api/                            # Vercel Functions: session, sync, agenda, push, push-test e notify (cron)
+api/                            # Vercel Functions: session, sync, agenda, push, push-test, notify e backup (crons)
 server/                         # Prisma, autenticação, regras da sincronização
 prisma/                         # schema.prisma e migrations
 ```
@@ -187,6 +187,18 @@ Precisam da sincronização ligada (é o servidor que sabe o que avisar). Cada a
 - **Noite:** hábitos que ainda faltam; aos domingos, a revisão semanal se ainda não foi feita.
 - **iPhone:** só funciona com o Sísifo instalado na tela de início (iOS 16.4+).
 - O service worker (e, portanto, o push) só existe no build de produção.
+
+## Backup automático
+
+Todo **domingo às 6h UTC** (3h de Brasília), o Vercel Cron chama `/api/backup`. A rota exporta todos os registros do servidor (sem as exclusões) no **mesmo formato do "Exportar backup"** e grava no **Vercel Blob privado** como `backups/sisifo-backup-AAAA-MM-DD.json`. Ficam as **8 cópias mais recentes** (dois meses); as mais antigas são apagadas.
+
+- **Restaurar:** em Configurações → Backup, **Baixar o mais recente** e depois **Importar backup**. Fora da sincronização, abra o Blob na Vercel e baixe qualquer cópia.
+- **Ativar:** no projeto da Vercel, **Storage → Create → Blob**, com acesso **Private**, e conecte ao projeto. A SDK (`@vercel/blob`) se autentica sozinha por OIDC (`BLOB_STORE_ID` é criada na conexão). Sem o Blob, o cron responde `skipped`, como o `notify`.
+- **Segurança:** o cron só roda com o `CRON_SECRET` (o mesmo das notificações). O download exige a sessão do app e sai com `Cache-Control: private, no-store`.
+- **Limites (Hobby):** cron no máximo diário, com até ±59 min de atraso; um semanal cabe. O Blob tem 1 GB e 2.000 operações avançadas por mês; cada backup usa duas (gravar e listar), e apagar é grátis.
+- **Funções:** o plano Hobby aceita até 12 arquivos em `api/`. O backup usa um arquivo só para o cron e para o app (`api/backup.ts`).
+
+Código em `api/backup.ts`, `server/backup.ts` e `src/shared/backup.ts`. A conversão dos registros em backup usa `src/shared/records.ts`, a mesma do app.
 
 ## Atalhos do iPhone
 

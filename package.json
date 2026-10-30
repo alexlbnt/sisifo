@@ -24,6 +24,7 @@
     "@prisma/adapter-neon": "^7.10.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@vercel/blob": "^2.8.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "ical.js": "^2.2.1",

@@ -12,6 +12,7 @@ import { ShortcutsCard } from '@/features/shortcuts/ShortcutsCard';
 import { useAuthStore } from '@/features/sync/authStore';
 import { SyncCard } from '@/features/sync/SyncCard';
 import { cn } from '@/lib/cn';
+import { AutoBackup } from './AutoBackup';
 import { clearAllData, downloadBackup, importBackup, restoreSampleData } from './backup';
 
 type Notice = { tone: 'good' | 'danger'; text: string } | null;
@@ -109,6 +110,7 @@ export function SettingsPage() {
               {notice.text}
             </p>
           )}
+          {synced && <AutoBackup />}
         </Card>
 
         <Card title="Dados" description="Recomece do zero ou volte aos dados de exemplo.">
