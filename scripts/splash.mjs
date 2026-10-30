@@ -10,8 +10,8 @@ import { instructions } from '@vite-pwa/assets-generator/api/instructions';
 import { combinePresetAndAppleSplashScreens, minimal2023Preset } from '@vite-pwa/assets-generator/config';
 
 // Mesmas cores de fundo do app (--bg em src/index.css).
-const LIGHT_BG = '#eceee9';
-const DARK_BG = '#0f1311';
+const LIGHT_BG = '#ebe7df';
+const DARK_BG = '#0d0f0e';
 
 // iPhones com tela sem botão (X em diante) e o SE de 4,7".
 const DEVICES = [
@@ -38,10 +38,11 @@ const preset = combinePresetAndAppleSplashScreens(
   DEVICES,
 );
 
-const svg = await readFile('public/favicon.svg');
+// Marca sem fundo, com cores que funcionam na abertura clara e na escura.
+const svg = await readFile('scripts/brand/splash.svg');
 const result = await instructions({
   imageResolver: () => svg,
-  imageName: 'public/favicon.svg',
+  imageName: 'scripts/brand/splash.svg',
   preset,
   faviconPreset: '2023',
   htmlLinks: { xhtml: false, includeId: false },

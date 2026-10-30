@@ -15,7 +15,8 @@
     "db:studio": "prisma studio",
     "hash-password": "node scripts/hash-password.mjs",
     "vapid": "node scripts/vapid.mjs",
-    "splash": "node scripts/splash.mjs"
+    "splash": "node scripts/splash.mjs",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
