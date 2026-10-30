@@ -35,6 +35,8 @@ npm test           # testes das regras (streak, finanças, sincronização, logi
 npm run build      # Prisma Client + checagem de tipos + build de produção
 ```
 
+O GitHub Actions (`.github/workflows/ci.yml`) roda `typecheck`, `test` e o build do Vite em cada push e pull request na `main`. Não usa banco nem segredos: as migrations ficam só no build da Vercel.
+
 Sem `.env.local`, o app roda **só no aparelho**, sem login e sem sincronização. Na primeira abertura, ele grava dados de exemplo (6 meses de finanças, metas, hábitos e treinos). Em **Configurações** dá para exportar e importar backup, restaurar o exemplo ou apagar tudo.
 
 ### Com sincronização no desenvolvimento

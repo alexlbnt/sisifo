@@ -1,0 +1,42 @@
+# Checagem de tipos, testes e build a cada push e pull request na main.
+# Não usa banco nem segredos: o `npm run build` fica de fora porque roda as
+# migrations (scripts/migrate.mjs); aqui o build é só o do Vite.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # O Prisma Client fica fora do git (server/generated); o `npm ci` já gera
+      # pelo postinstall, mas o passo explícito deixa claro onde falhou.
+      - run: npx prisma generate
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - name: Build do Vite (sem migrations)
+        run: npx vite build
