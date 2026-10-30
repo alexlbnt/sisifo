@@ -34,7 +34,7 @@ function TimerHill() {
   const now = useTimerNow();
   const done = progressAt(timer, settings, now);
   const at = timer.phase === 'focus' ? done : 1 - done;
-  return <Hill at={at} label={`${PHASE_LABEL[timer.phase]}: ${Math.round(done * 100)}% da etapa`} />;
+  return <Hill at={at} summit label={`${PHASE_LABEL[timer.phase]}: ${Math.round(done * 100)}% da etapa`} />;
 }
 
 function ControlButton({

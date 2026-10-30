@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { CalendarDays, Clock, ListChecks, Settings, Timer, type LucideIcon } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
+import { Ruins } from '@/components/ui/Ruins';
 import { cn } from '@/lib/cn';
 import { startOfWeekISO, toISODate } from '@/lib/dates';
 import { useAgendaWeek } from '@/features/agenda/agendaStore';
@@ -61,7 +62,10 @@ function useTimerEngine(today: string) {
 
 /* ───────── Tema por horário ───────── */
 
-const BAR_COLOR = { light: '#eceee9', dark: '#000000' } as const;
+const BAR_COLOR = { light: '#ebe7df', dark: '#000000' } as const;
+
+/** O relógio fica no alto à esquerda: ali as colunas quase somem (o painel é lido a dois metros). */
+const panelMask = (x: number, y: number) => (x < 0.45 && y < 0.6 ? 0.3 : 1);
 
 function usePanelTheme(now: number) {
   const { theme, darkFrom, darkTo } = usePanelStore((s) => s.settings);
@@ -202,6 +206,8 @@ function PanelShell() {
 
   return (
     <div className="panel panel-shell">
+      {/* Ruínas paradas ao fundo; apagam mais à esquerda, atrás do relógio. */}
+      <Ruins kind="backdrop" mask={panelMask} className="absolute inset-0 -z-10 h-full w-full" />
       <main
         className="panel-main p-3"
         onPointerDown={onPointerDown}
