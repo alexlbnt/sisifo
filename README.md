@@ -124,6 +124,20 @@ As do localStorage são pequenas, e o tema e o Modo Painel são lidos antes do R
 1. Aparelhos com sincronização: voltar o deploy na Vercel é seguro. A versão antiga encontra o localStorage vazio, puxa tudo do servidor e substitui os dados do aparelho.
 2. Aparelhos só locais: antes de voltar o deploy, publique um hotfix com `FORCE_LOCAL = true` em `src/lib/storage.ts`. Ele copia o IndexedDB de volta para o localStorage (marcador `local`) e passa a usá-lo. Depois de abrir o app uma vez em cada aparelho, a versão antiga já encontra os dados. Ao voltar `FORCE_LOCAL` para `false`, a migração copia o localStorage (o mais novo) para o IndexedDB de novo.
 
+## Visual: as ruínas
+
+O cenário do mito: a encosta da tela Hoje fica entre **ruínas gregas em pontilhado** (efeito *dither*), com um templo em ruínas no topo; as outras telas têm colunas bem apagadas ao fundo; o login mostra as ruínas ao lado do formulário; e o Modo Painel ganha o templo no topo da encosta do Pomodoro.
+
+- **Desenhadas por código, não são imagens.** O motor em `src/lib/ruins/dither.ts` desenha colunas, tambores e encosta numa grade de luminância e transforma cada célula em ponto pela matriz Bayer 4×4. As cenas (`backdrop`, `summit`, `login`) ficam em `src/lib/ruins/scenes.ts`, com sementes fixas: as ruínas estão sempre no mesmo lugar.
+- **`<Ruins kind="…" />`** (`src/components/ui/Ruins.tsx`) desenha num `<canvas>` uma vez e só redesenha quando muda o tamanho ou o tema. No `Hill` do painel, o templo é um `path` SVG (`toDotPath`), calculado uma vez só.
+- **As ruínas ficam paradas.** A pedra continua sendo o único elemento animado. Nada de timer ou `requestAnimationFrame` no cenário: o painel fica ligado o dia inteiro.
+- **Legibilidade primeiro:** o fundo nunca passa de `BACKDROP_DEPTH = 0.35` e usa uma opacidade própria (`--ruins-backdrop-alpha`). Onde há texto importante, uma `mask` apaga as colunas ainda mais.
+- **Cores:** `--ruins`, `--ruins-alpha` e `--ruins-backdrop-alpha` em `src/index.css`, por tema. Fundo: mármore `#ebe7df` no claro e quase preto `#0d0f0e` no escuro.
+- **Logo:** a pedra na encosta, só no traço (`Logo.tsx` e `public/favicon.svg`, que segue o tema do sistema). O ícone instalado usa a versão escura, porque o ícone da tela inicial não acompanha o tema.
+- **Ícones e abertura:** `npm run icons` gera `pwa-192`, `pwa-512`, `maskable-512` e `apple-touch-icon` a partir da marca (`scripts/icons.mjs`). `npm run splash` gera as telas de abertura a partir de `scripts/brand/splash.svg`. Rode os dois de novo se trocar o logo ou as cores de fundo. No iPhone, ícone e abertura só mudam ao remover e adicionar o app de novo à Tela de Início.
+
+Design, plano e protótipo em `docs/superpowers/specs/2026-10-30-ruinas-design.md`, `docs/superpowers/plans/2026-10-30-ruinas.md` e `docs/atualizacoes/v1.12.0-ruinas.md`.
+
 ## App instalável (PWA)
 
 O Sísifo pode ser instalado na tela inicial do celular. Ele abre em tela cheia e funciona sem internet: o app fica em cache e os dados já são locais.

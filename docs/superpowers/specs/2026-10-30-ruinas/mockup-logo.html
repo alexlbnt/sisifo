@@ -1,0 +1,72 @@
+<h2>Novo logo: qual marca combina com as ruínas?</h2>
+<p class="subtitle">Todas são só traço, sem fundo preenchido, como na referência. Cada uma aparece grande, no tamanho de ícone do app e de favicon, nos temas escuro e claro.</p>
+
+<div class="lg-grid">
+  <div class="option lg-opt" data-choice="1" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content"><h3>Anel e encosta</h3><p>A pedra vira um anel cortado pela linha da encosta. A mais próxima da referência: geométrica e limpa.</p></div>
+    <div class="lg-show" data-m="1"></div>
+  </div>
+  <div class="option lg-opt" data-choice="2" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content"><h3>Pedra na encosta</h3><p>O logo atual, sem o quadrado: a pedra sólida apoiada na linha. Continuidade com o que você já tem.</p></div>
+    <div class="lg-show" data-m="2"></div>
+  </div>
+  <div class="option lg-opt" data-choice="3" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content"><h3>Coluna e pedra</h3><p>Um capitel jônico, com as volutas, e a pedra no alto. Liga o logo às ruínas do cenário.</p></div>
+    <div class="lg-show" data-m="3"></div>
+  </div>
+  <div class="option lg-opt" data-choice="4" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content"><h3>Sigma</h3><p>A letra grega Σ, de Sísifo. A barra de cima é a encosta, e a pedra está a meio caminho.</p></div>
+    <div class="lg-show" data-m="4"></div>
+  </div>
+</div>
+
+<style>
+  .lg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; }
+  .lg-opt { flex-direction:column; align-items:stretch !important; }
+  .lg-opt .content { min-height:70px; }
+  .lg-show { display:grid; grid-template-columns:1fr 1fr; border-radius:14px; overflow:hidden; margin-top:10px; }
+  .lg-pane { padding:18px 14px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .lg-pane.dark { background:#0d0f0e; --ink:#e6eae7; --accent:#93a6ef; --bg:#0d0f0e; }
+  .lg-pane.light { background:#ebe7df; --ink:#1d1f1d; --accent:#2e4a9e; --bg:#ebe7df; }
+  .lg-big svg { width:84px; height:84px; display:block; }
+  .lg-word { display:flex; align-items:center; gap:8px; color:var(--ink); font-family:'Bricolage Grotesque','IBM Plex Sans',system-ui,sans-serif; font-weight:600; font-size:19px; letter-spacing:-.02em; }
+  .lg-word svg { width:26px; height:26px; }
+  .lg-sizes { display:flex; align-items:flex-end; gap:12px; }
+  .lg-app { width:44px; height:44px; border-radius:11px; display:grid; place-items:center; background:var(--bg); box-shadow:0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+  .lg-app svg { width:30px; height:30px; }
+  .lg-fav svg { width:16px; height:16px; display:block; }
+</style>
+
+<script>
+(function () {
+  // Cada marca num viewBox 48x48. "s" = traço (cor do texto), "a" = acento (pedra).
+  const MARKS = {
+    1: `<circle cx="24" cy="24" r="17" fill="none" stroke="var(--ink)" stroke-width="3.2"/>
+        <path d="M9.5 31.5 L38.5 16.5" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="21" cy="19.5" r="4.6" fill="var(--accent)"/>`,
+    2: `<path d="M6 38 L42 14" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="22.6" cy="19.2" r="7.6" fill="var(--accent)"/>`,
+    3: `<circle cx="24" cy="8.5" r="5" fill="var(--accent)"/>
+        <path d="M10 16.5 H38" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M14.5 21.5 a3.6 3.6 0 1 1 3.6 -3.6 M33.5 21.5 a3.6 3.6 0 1 0 -3.6 -3.6" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M18.5 22 V39 M24 22 V39 M29.5 22 V39" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M12 42.5 H36" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>`,
+    4: `<path d="M37 9.5 L12 14.5 L25 25 L12 38.5 H37" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="24.5" cy="6.2" r="4.4" fill="var(--accent)"/>`,
+  };
+  const svg = (m) => `<svg viewBox="0 0 48 48" aria-hidden="true">${MARKS[m]}</svg>`;
+  document.querySelectorAll('.lg-show').forEach((el) => {
+    const m = el.dataset.m;
+    el.innerHTML = ['dark', 'light'].map((t) => `
+      <div class="lg-pane ${t}">
+        <div class="lg-big">${svg(m)}</div>
+        <div class="lg-word">${svg(m)}Sísifo</div>
+        <div class="lg-sizes"><div class="lg-app">${svg(m)}</div><div class="lg-fav">${svg(m)}</div></div>
+      </div>`).join('');
+  });
+})();
+</script>

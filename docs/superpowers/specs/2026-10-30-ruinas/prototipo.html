@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sísifo · Protótipo das Ruínas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<!--
+  Protótipo estático da atualização "Ruínas" (v1.12.0). Não é código do app.
+  Abra com ?tela=hoje|financas|login|painel|logo&tema=dark|light
+  O motor de pontilhado aqui é a referência para src/lib/ruins/ (ver o plano).
+-->
+<style>
+  :root {
+    --bg:#ebe7df; --surface:#ffffff; --surface-2:#f4f1ea; --line:#d9d4c9;
+    --ink:#1a201e; --ink-2:#4c5652; --ink-3:#737d78;
+    --accent:#2e4a9e; --accent-ink:#ffffff; --accent-soft:#e2e7f6;
+    --income:#1b7349; --expense:#b2382f;
+    --ruins:#2c2822; --ruins-alpha:.5;
+  }
+  .dark {
+    --bg:#0d0f0e; --surface:#171c1a; --surface-2:#1d2320; --line:#2a322f;
+    --ink:#e6eae7; --ink-2:#a9b3ae; --ink-3:#7f8a85;
+    --accent:#93a6ef; --accent-ink:#0e1430; --accent-soft:#222a45;
+    --income:#5cc493; --expense:#f0827a;
+    --ruins:#e2e6e2; --ruins-alpha:.6;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; }
+  body { background:var(--bg); color:var(--ink); font:15px/1.5 'IBM Plex Sans', system-ui, sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden; }
+  h1, h2, h3, .display { font-family:'Bricolage Grotesque','IBM Plex Sans',sans-serif; letter-spacing:-.01em; margin:0; }
+  .ruins { position:absolute; inset:0; pointer-events:none; }
+  .fixed-bg { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .app { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; }
+  .card { background:color-mix(in srgb, var(--surface) 92%, transparent); border:1px solid var(--line); border-radius:16px; padding:14px 16px; }
+  .card h2 { font-size:15px; font-weight:600; margin-bottom:8px; }
+  .muted { color:var(--ink-3); font-size:13px; }
+  .row { display:flex; align-items:center; gap:10px; padding:7px 0; font-size:14px; }
+  .row + .row { border-top:1px solid var(--line); }
+  .check { width:18px; height:18px; border-radius:50%; border:1.6px solid var(--ink-3); flex:none; }
+  .check.on { background:var(--accent); border-color:var(--accent); }
+  .row.done span { color:var(--ink-3); text-decoration:line-through; }
+  .chip { margin-left:auto; font-size:12px; color:var(--ink-3); }
+  .tabular { font-variant-numeric:tabular-nums; }
+
+  /* Logo: a pedra na encosta, sem o quadrado */
+  .logo { display:inline-flex; align-items:center; gap:9px; }
+  .logo svg { width:30px; height:30px; }
+  .logo span { font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:20px; letter-spacing:-.02em; }
+  .mark-line { stroke:var(--ink); }
+  .mark-stone { fill:var(--accent); }
+
+  /* Celular */
+  .m-header { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--surface) 90%, transparent); flex:none; }
+  .m-icons { display:flex; gap:18px; color:var(--ink-3); }
+  .m-icons i { width:18px; height:18px; border:1.6px solid currentColor; border-radius:6px; display:block; }
+  .m-main { flex:1; overflow:hidden; padding:0 16px; }
+  .m-nav { height:70px; flex:none; display:flex; justify-content:space-around; align-items:center; background:color-mix(in srgb, var(--surface) 92%, transparent); border-top:1px solid var(--line); font-size:11px; color:var(--ink-3); padding-bottom:8px; }
+  .m-nav .on { color:var(--accent); font-weight:600; }
+  .m-nav b { width:44px; height:44px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-size:26px; font-weight:400; }
+
+  /* Hoje: a encosta entre ruínas */
+  .hero { position:relative; height:290px; margin:0 -16px; overflow:hidden; background:var(--bg); }
+  .hero-text { position:relative; z-index:2; padding:18px 20px 0; }
+  .hero-text .date { font-size:13px; color:var(--ink-3); }
+  .hero-text h1 { font-size:34px; line-height:1.04; font-weight:650; margin-top:2px; max-width:11ch; }
+  .hero-text p { margin:6px 0 0; font-size:13px; color:var(--ink-2); max-width:24ch; }
+  .hero svg.trail { position:absolute; inset:0; width:100%; height:100%; z-index:1; }
+  .stone { position:absolute; z-index:2; width:34px; height:34px; border-radius:50%; background:var(--accent); transform:translate(-50%,-100%); }
+  .stone::before { content:''; position:absolute; left:8px; top:9px; width:11px; height:6px; border-top:2px solid color-mix(in srgb, var(--accent-ink) 50%, transparent); border-radius:50% 50% 0 0; }
+  .stone::after { content:''; position:absolute; right:9px; bottom:8px; width:4px; height:4px; border-radius:50%; background:color-mix(in srgb, var(--accent-ink) 40%, transparent); }
+  .focus { margin-top:12px; background:color-mix(in srgb, var(--accent-soft) 70%, transparent); border:1px solid var(--line); border-radius:16px; padding:10px 14px; font-size:13px; }
+  .stack > * + * { margin-top:12px; }
+
+  /* Finanças */
+  .page-title { padding:20px 0 4px; }
+  .page-title h1 { font-size:26px; font-weight:650; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .stat .muted { font-size:12px; }
+  .stat strong { display:block; font-size:20px; font-weight:600; letter-spacing:-.01em; }
+  .tx { display:flex; align-items:center; gap:10px; padding:9px 0; font-size:14px; }
+  .tx + .tx { border-top:1px solid var(--line); }
+  .tx .ic { width:32px; height:32px; border-radius:10px; background:var(--surface-2); flex:none; }
+  .tx .amt { margin-left:auto; font-weight:500; }
+
+  /* Login */
+  .login { position:relative; z-index:1; height:100%; display:grid; grid-template-columns:1fr; }
+  .login.desk { grid-template-columns:minmax(420px, 1fr) 1.15fr; }
+  .login-form { display:flex; flex-direction:column; justify-content:center; padding:32px; max-width:420px; width:100%; margin:0 auto; }
+  .login-form h1 { font-size:28px; font-weight:600; margin-top:40px; line-height:1.15; }
+  .login-form p { color:var(--ink-2); font-size:14px; margin:6px 0 0; }
+  .login-form label { margin-top:28px; font-size:13px; font-weight:500; color:var(--ink-2); }
+  .input { margin-top:8px; height:48px; border-radius:12px; border:1px solid var(--line); background:color-mix(in srgb, var(--surface) 92%, transparent); display:flex; align-items:center; padding:0 14px; color:var(--ink-3); font-size:15px; gap:10px; }
+  .btn { margin-top:18px; height:48px; border-radius:12px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-weight:600; }
+  .login-art { position:relative; border-left:1px solid var(--line); overflow:hidden; }
+
+  /* Painel (paisagem) */
+  .panel { position:relative; z-index:1; height:100%; display:grid; grid-template-columns:1fr 250px; grid-template-rows:1fr auto; gap:6px 18px; padding:14px 18px; }
+  .panel .timer { font-family:'Bricolage Grotesque',sans-serif; font-size:118px; font-weight:600; letter-spacing:-.04em; line-height:1; }
+  .panel .phase { font-size:15px; color:var(--accent); font-weight:600; text-transform:uppercase; letter-spacing:.08em; }
+  .panel .hill { grid-column:1 / -1; }
+  .panel aside .card { margin-top:8px; }
+
+  /* Folha do logo */
+  .sheet { display:grid; grid-template-columns:1fr 1fr; height:100%; }
+  .sheet > div { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; position:relative; }
+  .sheet .big svg { width:150px; height:150px; }
+  .sheet .sizes { display:flex; align-items:flex-end; gap:22px; }
+  .app-icon { width:76px; height:76px; border-radius:18px; display:grid; place-items:center; background:#0d0f0e; box-shadow:0 0 0 1px rgba(127,138,133,.35); }
+  .app-icon svg { width:52px; height:52px; }
+  .sheet .cap { font-size:12px; color:var(--ink-3); text-align:center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ───────── Motor de pontilhado (referência para src/lib/ruins/dither.ts) ───────── */
+const BAYER = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]].map(r => r.map(v => (v + 0.5) / 16));
+const CELL = 2, DOT = 1.25, MAX_CELLS = 250000;
+
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function createGrid(cols, rows) {
+  const k = Math.min(1, Math.sqrt(MAX_CELLS / (cols * rows)));
+  cols = Math.max(1, Math.floor(cols * k)); rows = Math.max(1, Math.floor(rows * k));
+  return { cols, rows, lum: new Float32Array(cols * rows) };
+}
+function plot(g, x, y, v) {
+  x = Math.round(x); y = Math.round(y);
+  if (x < 0 || y < 0 || x >= g.cols || y >= g.rows) return;
+  const i = y * g.cols + x; if (v > g.lum[i]) g.lum[i] = v;
+}
+const shade = (u) => 0.1 + 0.85 * Math.max(0, 0.6 * Math.sqrt(Math.max(0, 1 - u * u)) - 0.45 * u);
+
+function drawColumn(g, { x, base, height, width, broken = 0, decay = 0.07, depth = 1, seed }) {
+  x = Math.round(x); base = Math.round(base); height = Math.round(height); width = Math.round(width);
+  const r = seeded(seed);
+  const capH = Math.max(4, Math.round(width * 0.8)), baseH = Math.max(3, Math.round(width * 0.45));
+  const top = base - height, shaftTop = top + capH, shaftBot = base - baseH;
+  const cut = broken ? Math.round(top + height * broken) : null;
+  const jag = new Map();
+  const put = (px, py, v) => {
+    if (cut !== null) { if (!jag.has(px)) jag.set(px, Math.round(r() * 6 - 1)); if (py < cut + jag.get(px)) return; }
+    if (r() < decay) v *= 0.2;
+    plot(g, px, py, v * depth);
+  };
+  const band = (y, hw, flutes, mul = 1) => {
+    for (let px = Math.round(x - hw); px <= Math.round(x + hw); px++) {
+      const u = (px - x) / hw; if (Math.abs(u) > 1) continue;
+      let v = shade(u);
+      if (flutes) v *= 0.55 + 0.45 * (0.5 + 0.5 * Math.cos(u * Math.PI * 7));
+      put(px, y, v * mul);
+    }
+  };
+  for (let y = shaftBot; y < base; y++) { const k = (y - shaftBot) / baseH; band(y, width * 0.5 * (k < 0.5 ? 1.25 : 1.5), false, k > 0.45 && k < 0.6 ? 0.5 : 1); }
+  for (let y = shaftTop; y < shaftBot; y++) { const k = (y - shaftTop) / (shaftBot - shaftTop); band(y, width * 0.5 * (0.86 + 0.14 * k), true); }
+  if (!broken) {
+    for (let y = top; y < shaftTop; y++) {
+      const k = (y - top) / capH;
+      const hw = k < 0.28 ? width * 0.5 * 1.65 : width * 0.5 * (1.45 - 0.5 * (k - 0.28) / 0.72);
+      band(y, hw, false, k < 0.28 && (y - top) % 2 ? 0.6 : 1);
+    }
+    const vr = Math.max(1.5, capH * 0.3), vy = top + capH * 0.48;
+    for (const s of [-1, 1]) for (let a = 0; a < 6.3; a += 0.2) put(x + s * width * 0.66 + Math.cos(a) * vr, vy + Math.sin(a) * vr, 0.95);
+  }
+  for (let i = 0; i < width * 1.5; i++) plot(g, x + (r() - 0.5) * width * 3, base - r() * 2, 0.4 * depth);
+}
+function drawDrum(g, { x, y, length, radius, depth = 1, seed }) {
+  x = Math.round(x); y = Math.round(y); length = Math.round(length); radius = Math.max(1, Math.round(radius));
+  const r = seeded(seed);
+  for (let dy = -radius; dy <= radius; dy++) {
+    const u = dy / radius;
+    for (let dx = 0; dx < length; dx++) {
+      let v = shade(u) * (0.6 + 0.4 * (0.5 + 0.5 * Math.cos(u * Math.PI * 4)));
+      if (r() < 0.06) v *= 0.2;
+      plot(g, x + dx, y + dy, v * depth);
+    }
+  }
+}
+function drawSlope(g, { from, to, thickness, depth = 1, seed }) {
+  const r = seeded(seed);
+  for (let x = Math.round(from.x); x <= Math.round(to.x); x++) {
+    const t = (x - from.x) / (to.x - from.x || 1);
+    const ly = Math.round(from.y + (to.y - from.y) * t);
+    plot(g, x, ly, 0.95 * depth); plot(g, x, ly + 1, 0.75 * depth);
+    for (let y = ly + 2; y < ly + thickness; y++) plot(g, x, y, (0.42 - ((y - ly) / thickness) * 0.4) * (0.75 + 0.5 * r()) * depth);
+  }
+}
+function forEachDot(g, cb, mask) {
+  for (let y = 0; y < g.rows; y++) for (let x = 0; x < g.cols; x++) {
+    let v = g.lum[y * g.cols + x]; if (!v) continue;
+    if (mask) v *= mask(x / g.cols, y / g.rows);
+    if (Math.pow(v, 0.7) > BAYER[y & 3][x & 3]) cb(x, y);
+  }
+}
+function toDotPath(g, cell, dot, ox = 0, oy = 0) {
+  let d = ''; forEachDot(g, (x, y) => { d += `M${+(ox + x * cell).toFixed(2)} ${+(oy + y * cell).toFixed(2)}h${dot}v${dot}h-${dot}z`; }); return d;
+}
+
+/* ───────── Cenas (referência para src/lib/ruins/scenes.ts) ───────── */
+const BACKDROP_DEPTH = 0.35;
+const SUMMIT_SLOPE = { from: { x: 0, y: 0.86 }, to: { x: 1, y: 0.4 } };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function buildScene(kind, cols, rows) {
+  const g = createGrid(cols, rows); cols = g.cols; rows = g.rows;
+  if (kind === 'backdrop') {
+    const w = clamp(cols * 0.09, 12, 38);
+    drawColumn(g, { x: cols * 0.1, base: rows, height: rows * 0.86, width: w, depth: BACKDROP_DEPTH, seed: 11 });
+    drawColumn(g, { x: cols * 0.9, base: rows, height: rows * 0.76, width: w * 0.9, broken: 0.3, depth: BACKDROP_DEPTH * 0.85, seed: 12 });
+    drawDrum(g, { x: cols * 0.3, y: rows - w * 0.35, length: w * 1.6, radius: w * 0.3, depth: BACKDROP_DEPTH * 0.8, seed: 13 });
+  }
+  if (kind === 'summit') {
+    const line = (fx) => rows * (SUMMIT_SLOPE.from.y + (SUMMIT_SLOPE.to.y - SUMMIT_SLOPE.from.y) * fx);
+    const w = clamp(cols * 0.035, 6, 16);
+    drawSlope(g, { from: { x: 0, y: line(0) }, to: { x: cols - 1, y: line(1) }, thickness: rows * 0.14, seed: 23 });
+    [[0.79, 0.27, 0.35], [0.87, 0.35, 0], [0.95, 0.3, 0.2]].forEach(([fx, fh, br], i) =>
+      drawColumn(g, { x: cols * fx, base: line(fx) + 1, height: rows * fh, width: w, broken: br, seed: 31 + i }));
+  }
+  if (kind === 'login') {
+    const w = clamp(cols * 0.1, 12, 40);
+    drawColumn(g, { x: cols * 0.2, base: rows - 4, height: rows * 0.9, width: w, broken: 0.04, seed: 41 });
+    drawColumn(g, { x: cols * 0.52, base: rows - 4, height: rows * 0.68, width: w * 0.95, seed: 42 });
+    drawColumn(g, { x: cols * 0.82, base: rows - 4, height: rows * 0.95, width: w * 1.05, seed: 43 });
+    drawDrum(g, { x: cols * 0.32, y: rows - 6, length: w * 1.4, radius: w * 0.28, seed: 44 });
+    const r = seeded(45);
+    for (let i = 0; i < cols * 1.2; i++) plot(g, r() * cols, rows - 1 - r() * 6, 0.35 + 0.4 * r());
+  }
+  return g;
+}
+function buildTemple(cols, rows) {
+  const g = createGrid(cols, rows), w = Math.max(4, Math.round(cols * 0.16));
+  [[0.2, 0.62, 0.35], [0.5, 0.95, 0], [0.8, 0.8, 0.2]].forEach(([fx, fh, br], i) =>
+    drawColumn(g, { x: cols * fx, base: rows - 1, height: rows * fh, width: w, broken: br, decay: 0.03, seed: 51 + i }));
+  return g;
+}
+
+/* ───────── <Ruins> (referência para src/components/ui/Ruins.tsx) ───────── */
+function paintRuins(canvas, kind, mask) {
+  const box = canvas.parentElement.getBoundingClientRect();
+  const W = Math.max(1, box.width), H = Math.max(1, box.height), dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const g = buildScene(kind, Math.floor(W / CELL), Math.floor(H / CELL));
+  const cs = getComputedStyle(canvas);
+  ctx.fillStyle = cs.getPropertyValue('--ruins').trim(); ctx.globalAlpha = parseFloat(cs.getPropertyValue('--ruins-alpha'));
+  const sx = W / g.cols, sy = H / g.rows;
+  forEachDot(g, (x, y) => ctx.fillRect(x * sx, y * sy, DOT, DOT), mask);
+}
+const ruins = (kind, cls = 'ruins') => `<canvas class="${cls}" data-kind="${kind}" aria-hidden="true"></canvas>`;
+
+/* ───────── Telas ───────── */
+const MARK = `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 L27 9" class="mark-line" stroke-width="2.5" stroke-linecap="round"/><circle cx="14.6" cy="10.6" r="5" class="mark-stone"/></svg>`;
+const LOGO = `<span class="logo">${MARK}<span>Sísifo</span></span>`;
+const HEADER = `<header class="m-header">${LOGO}<div class="m-icons"><i></i><i></i><i></i></div></header>`;
+const NAV = (on) => `<nav class="m-nav">${['Hoje','Finanças'].map(l => `<span class="${l === on ? 'on' : ''}">${l}</span>`).join('')}<b>+</b>${['Tarefas','Mais'].map(l => `<span class="${l === on ? 'on' : ''}">${l}</span>`).join('')}</nav>`;
+
+function hoje() {
+  const done = 3, total = 7, t = done / total;
+  const from = SUMMIT_SLOPE.from, to = SUMMIT_SLOPE.to;
+  const bx = from.x + (to.x - from.x) * t, by = from.y + (to.y - from.y) * t;
+  return `${ruins('backdrop', 'fixed-bg')}
+  <div class="app">${HEADER}
+    <main class="m-main">
+      <section class="hero" aria-label="Progresso do dia">
+        ${ruins('summit')}
+        <svg class="trail" viewBox="0 0 1 1" preserveAspectRatio="none" role="img" aria-label="43% do dia concluído">
+          <line x1="${from.x}" y1="${from.y}" x2="${bx}" y2="${by}" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="stone" style="left:${bx * 100}%; top:${by * 100}%; transform:translate(-50%,-100%) rotate(${Math.round(t * 540)}deg)"></div>
+        <div class="hero-text">
+          <div class="date">quinta-feira, 30 de outubro</div>
+          <h1>3 de 7 feitos</h1>
+          <p>Faltam 4 itens entre tarefas, hábitos e treino.</p>
+        </div>
+      </section>
+      <div class="stack">
+        <div class="focus"><strong>Foco da semana:</strong> fechar o módulo 2 do PSM I.</div>
+        <section class="card"><h2>Tarefas de hoje</h2>
+          <div class="row done"><i class="check on"></i><span>Pagar a fatura do cartão</span></div>
+          <div class="row done"><i class="check on"></i><span>Treino A: peito e tríceps</span></div>
+          <div class="row"><i class="check"></i><span>Estudar PSM I</span><em class="chip">19:00</em></div>
+          <div class="row"><i class="check"></i><span>Ler 20 páginas</span></div>
+        </section>
+        <section class="card"><h2>Dinheiro</h2>
+          <div class="display tabular" style="font-size:26px;font-weight:650">R$ 84,20 <span class="muted" style="font-family:'IBM Plex Sans'">para gastar hoje</span></div>
+        </section>
+      </div>
+    </main>${NAV('Hoje')}
+  </div>`;
+}
+
+function financas() {
+  const tx = [['Mercado', 'Alimentação · ontem', '− R$ 187,40', 'expense'], ['Salário', 'Receita · 25 out', '+ R$ 4.850,00', 'income'], ['Academia', 'Saúde · 24 out', '− R$ 99,90', 'expense'], ['Uber', 'Transporte · 24 out', '− R$ 23,15', 'expense'], ['Spotify', 'Assinaturas · 22 out', '− R$ 21,90', 'expense']];
+  return `${ruins('backdrop', 'fixed-bg')}
+  <div class="app">${HEADER}
+    <main class="m-main">
+      <div class="page-title"><span class="muted">Outubro de 2026</span><h1>Visão geral</h1></div>
+      <div class="stats">
+        <div class="card stat"><span class="muted">Saldo disponível</span><strong class="tabular">R$ 2.318,55</strong></div>
+        <div class="card stat"><span class="muted">Para gastar hoje</span><strong class="tabular">R$ 84,20</strong></div>
+        <div class="card stat"><span class="muted">Receitas</span><strong class="tabular" style="color:var(--income)">R$ 4.850,00</strong></div>
+        <div class="card stat"><span class="muted">Despesas</span><strong class="tabular" style="color:var(--expense)">R$ 2.531,45</strong></div>
+      </div>
+      <section class="card" style="margin-top:12px"><h2>Últimos lançamentos</h2>
+        ${tx.map(([n, s, v, c]) => `<div class="tx"><i class="ic"></i><div><div>${n}</div><div class="muted">${s}</div></div><span class="amt tabular" style="color:var(--${c})">${v}</span></div>`).join('')}
+      </section>
+    </main>${NAV('Finanças')}
+  </div>`;
+}
+
+function login() {
+  const desk = VW >= 1024;
+  const form = `<div class="login-form">${LOGO}
+      <h1>Entre para continuar</h1>
+      <p>Seus dados ficam neste aparelho e são sincronizados com segurança entre os seus dispositivos.</p>
+      <label>Senha</label>
+      <div class="input"><span>🔒︎</span>Sua senha</div>
+      <div class="btn">Entrar</div>
+    </div>`;
+  return desk
+    ? `<div class="login desk">${form}<div class="login-art">${ruins('login')}</div></div>`
+    : `${ruins('login', 'fixed-bg')}<div class="login">${form}</div>`;
+}
+
+function painel() {
+  const W = 1000, H = 130, start = { x: 26, y: 124 }, end = { x: 940, y: 40 }, t = 0.62;
+  const sx = start.x + (end.x - start.x) * t, sy = start.y + (end.y - start.y) * t;
+  const temple = toDotPath(buildTemple(56, 46), 2.2, 1.5, end.x - 62, end.y - 100);
+  return `${ruins('backdrop', 'fixed-bg')}
+  <div class="panel">
+    <div><div class="phase">Foco · 3 de 4</div><div class="timer tabular">09:31</div><div class="muted" style="font-size:15px">Estudar PSM I · termina às 19:25</div></div>
+    <aside><div class="muted">14:15 · 24°C, céu limpo</div>
+      <div class="card"><h2>A seguir</h2><div class="row"><span>Reunião de alinhamento</span><em class="chip">20:00</em></div><div class="row"><span>Ler 20 páginas</span></div></div>
+    </aside>
+    <svg class="hill" viewBox="0 -70 ${W} ${H + 70}" aria-label="Foco: 62% da etapa" role="img">
+      <path d="M0 ${H} L0 ${start.y} L${start.x} ${start.y} L${end.x} ${end.y} L${W} ${end.y} L${W} ${H} Z" fill="var(--surface-2)" opacity=".7"/>
+      <line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="${start.x}" y1="${start.y}" x2="${sx}" y2="${sy}" stroke="var(--accent)" stroke-width="6"/>
+      <path d="${temple}" fill="var(--ink-3)"/>
+      <circle cx="${sx + 4}" cy="${sy - 21}" r="20" fill="var(--accent)"/>
+    </svg>
+  </div>`;
+}
+
+function logo() {
+  const pane = (theme) => `<div class="${theme}" style="background:var(--bg);color:var(--ink)">
+      <div class="big">${MARK}</div>${LOGO}
+      <div class="sizes">
+        <div><div class="app-icon"><svg viewBox="0 0 32 32"><path d="M5 25 L27 9" stroke="#e6eae7" stroke-width="2.5" stroke-linecap="round"/><circle cx="14.6" cy="10.6" r="5" fill="#93a6ef"/></svg></div><div class="cap">ícone do app</div></div>
+        <div style="width:32px;height:32px">${MARK}</div>
+        <div style="width:16px;height:16px">${MARK}</div>
+      </div>
+      <div class="cap">${theme === 'dark' ? 'tema escuro' : 'tema claro'} · favicon 32 e 16 px</div>
+    </div>`;
+  return `<div class="sheet">${pane('light')}${pane('dark')}</div>`;
+}
+
+const params = new URLSearchParams(location.search);
+const tela = params.get('tela') || 'hoje';
+// Tamanho da tela simulada (o Chrome sem janela não abre abaixo de ~500 px de largura).
+const VW = +params.get('w') || innerWidth, VH = +params.get('h') || innerHeight;
+Object.assign(document.getElementById('root').style, { width: VW + 'px', height: VH + 'px', position: 'relative', overflow: 'hidden', transform: 'translateZ(0)' });
+document.documentElement.classList.toggle('dark', (params.get('tema') || 'dark') === 'dark');
+document.getElementById('root').innerHTML = ({ hoje, financas, login, painel, logo }[tela] || hoje)();
+// Onde há texto importante, as colunas apagam ainda mais (campo de senha; relógio do painel).
+const loginMask = VW < 1024 && tela === 'login' ? (fx, fy) => (fy > 0.3 && fy < 0.78 ? 0.4 : 1)
+  : tela === 'painel' ? (fx, fy) => (fx < 0.45 && fy < 0.6 ? 0.3 : 1) : undefined;
+const paintAll = () => document.querySelectorAll('canvas[data-kind]').forEach(c => paintRuins(c, c.dataset.kind, loginMask));
+document.fonts.ready.then(paintAll);
+paintAll();
+</script>
+</body>
+</html>

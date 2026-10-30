@@ -1,0 +1,243 @@
+<h2>Ruínas de fundo: três jeitos de usar</h2>
+<p class="subtitle">As colunas são desenhadas por código em pontilhado (nada de imagem pesada). Troque o tema e clique na direção que mais combina com você.</p>
+
+<div class="sx-switch">
+  <button data-t="dark" class="on">Escuro</button>
+  <button data-t="light">Claro</button>
+</div>
+
+<div class="sx-grid">
+  <div class="option sx-opt" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Cenário lateral</h3>
+      <p>Colunas fixas na borda da tela, atrás de tudo. Cartões levemente translúcidos por cima. O layout atual quase não muda.</p>
+    </div>
+    <div class="sx-phone" data-v="a"></div>
+  </div>
+  <div class="option sx-opt" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Pórtico no topo</h3>
+      <p>As ruínas ficam numa faixa no alto, como um friso. Abaixo, fundo limpo. Mais legível nas telas cheias de números.</p>
+    </div>
+    <div class="sx-phone" data-v="b"></div>
+  </div>
+  <div class="option sx-opt" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>A encosta entre ruínas</h3>
+      <p>Na tela Hoje, a encosta vira paisagem pontilhada, com o templo em ruínas no topo e a pedra subindo. Nas outras telas, colunas bem discretas.</p>
+    </div>
+    <div class="sx-phone" data-v="c"></div>
+  </div>
+</div>
+
+<style>
+  .sx-switch { display:flex; gap:6px; margin:4px 0 18px; }
+  .sx-switch button { font:inherit; font-size:13px; padding:6px 14px; border-radius:999px; border:1px solid #888; background:transparent; color:inherit; cursor:pointer; }
+  .sx-switch button.on { background:#222; color:#fff; border-color:#222; }
+  .sx-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:18px; }
+  .sx-opt { flex-direction:column; align-items:stretch !important; }
+  .sx-opt .content { min-height:96px; }
+  .sx-phone { position:relative; width:280px; height:580px; margin:12px auto 4px; border-radius:30px; overflow:hidden; box-shadow:0 0 0 6px #1b1b1b, 0 10px 30px rgba(0,0,0,.35); font-family:'IBM Plex Sans',system-ui,sans-serif; }
+  .sx-phone[data-theme=dark]  { --bg:#0d0f0e; --surface:rgba(23,28,26,.80); --line:rgba(255,255,255,.08); --ink:#e6eae7; --ink2:#a9b3ae; --ink3:#7f8a85; --accent:#93a6ef; --chip:rgba(147,166,239,.16); background:var(--bg); color:var(--ink); }
+  .sx-phone[data-theme=light] { --bg:#ebe7df; --surface:rgba(255,253,249,.80); --line:rgba(40,36,30,.10); --ink:#1d1f1d; --ink2:#4f5550; --ink3:#7a7f79; --accent:#2e4a9e; --chip:rgba(46,74,158,.10); background:var(--bg); color:var(--ink); }
+  .sx-phone canvas { position:absolute; inset:0; pointer-events:none; }
+  .sx-ui { position:absolute; inset:0; display:flex; flex-direction:column; padding:18px 14px 0; }
+  .sx-top { display:flex; align-items:center; gap:7px; font-weight:600; font-size:14px; letter-spacing:-.01em; }
+  .sx-logo { width:20px; height:20px; border-radius:6px; background:var(--accent); position:relative; }
+  .sx-logo::after { content:''; position:absolute; width:7px; height:7px; border-radius:50%; background:var(--bg); left:6px; top:4px; }
+  .sx-date { font-size:11px; color:var(--ink3); margin-top:14px; }
+  .sx-h { font-size:25px; line-height:1.05; font-weight:650; letter-spacing:-.02em; margin:3px 0 4px; max-width:12ch; }
+  .sx-cap { font-size:11px; color:var(--ink2); max-width:22ch; }
+  .sx-card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:11px 12px; margin-top:10px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .sx-card h4 { margin:0 0 6px; font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase; letter-spacing:.06em; }
+  .sx-row { display:flex; align-items:center; gap:8px; font-size:12px; padding:4px 0; }
+  .sx-dot { width:13px; height:13px; border-radius:50%; border:1.5px solid var(--ink3); flex:none; }
+  .sx-dot.done { background:var(--accent); border-color:var(--accent); }
+  .sx-row.done span { color:var(--ink3); text-decoration:line-through; }
+  .sx-money { font-size:22px; font-weight:650; letter-spacing:-.02em; }
+  .sx-money small { font-size:11px; font-weight:400; color:var(--ink3); margin-left:4px; }
+  .sx-nav { margin-top:auto; display:flex; justify-content:space-around; align-items:center; height:56px; margin-left:-14px; margin-right:-14px; background:var(--surface); border-top:1px solid var(--line); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-size:10px; color:var(--ink3); }
+  .sx-nav b { width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--bg); display:grid; place-items:center; font-size:20px; font-weight:400; }
+  .sx-nav .on { color:var(--accent); font-weight:600; }
+  .sx-herocard svg { display:block; width:100%; margin-top:6px; }
+  .sx-band { height:200px; position:relative; }
+</style>
+
+<script>
+(function () {
+  const BAYER = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]].map(r => r.map(v => (v + 0.5) / 16));
+  const CELL = 2;
+  const K = 3 / CELL; // as medidas das cenas estão em unidades de 3px
+  function rng(seed) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+
+  function makeScene(cols, rows) {
+    const L = new Float32Array(cols * rows);
+    return { cols, rows, L, set(x, y, v) { if (x < 0 || y < 0 || x >= cols || y >= rows) return; const i = y * cols + x; if (v > L[i]) L[i] = v; } };
+  }
+
+  // Coluna grega pontilhada: base, fuste canelado, capitel (ou topo quebrado), com erosão.
+  function column(S, { x, base, h, w, broken = 0, decay = 0.07, depth = 1, seed = 1 }) {
+    x = Math.round(x * K); base = Math.round(base * K); h = Math.round(h * K); w = Math.round(w * K);
+    const r = rng(seed);
+    const capH = Math.max(4, Math.round(w * 0.8)), baseH = Math.max(3, Math.round(w * 0.45));
+    const top = base - h, shaftTop = top + capH, shaftBot = base - baseH;
+    const cut = broken ? Math.round(top + h * broken) : null;
+    const jag = {};
+    function put(px, py, v) {
+      if (cut !== null) { if (jag[px] === undefined) jag[px] = Math.round(r() * 6 - 1); if (py < cut + jag[px]) return; }
+      if (r() < decay) v *= 0.2;
+      S.set(px, py, v * depth);
+    }
+    function band(y, hw, flutes, mul = 1) {
+      for (let px = Math.round(x - hw); px <= Math.round(x + hw); px++) {
+        const u = (px - x) / hw; if (Math.abs(u) > 1) continue;
+        const cyl = Math.sqrt(1 - u * u);
+        let v = 0.1 + 0.85 * Math.max(0, 0.6 * cyl - 0.45 * u);
+        if (flutes) v *= 0.55 + 0.45 * (0.5 + 0.5 * Math.cos(u * Math.PI * 7));
+        put(px, y, v * mul);
+      }
+    }
+    for (let y = shaftBot; y < base; y++) { const k = (y - shaftBot) / baseH; band(y, w * 0.5 * (k < 0.5 ? 1.25 : 1.5), false, k > 0.45 && k < 0.6 ? 0.5 : 1); }
+    for (let y = shaftTop; y < shaftBot; y++) { const k = (y - shaftTop) / (shaftBot - shaftTop); band(y, w * 0.5 * (0.86 + 0.14 * k), true); }
+    if (!broken) {
+      for (let y = top; y < shaftTop; y++) {
+        const k = (y - top) / capH;
+        const hw = k < 0.28 ? w * 0.5 * 1.65 : w * 0.5 * (1.45 - 0.5 * (k - 0.28) / 0.72);
+        band(y, hw, false, k < 0.28 && (y - top) % 2 ? 0.6 : 1);
+      }
+      const vr = Math.max(1.5, capH * 0.3), vy = top + capH * 0.48;
+      for (const side of [-1, 1]) {
+        const vx = x + side * w * 0.66;
+        for (let a = 0; a < 6.3; a += 0.25) put(Math.round(vx + Math.cos(a) * vr), Math.round(vy + Math.sin(a) * vr), 0.95);
+      }
+    }
+    for (let i = 0; i < w * 1.2; i++) S.set(Math.round(x + (r() - 0.5) * w * 3), Math.round(base - r() * 2), 0.4 * depth);
+  }
+
+  // Tambor de coluna caído no chão.
+  function drum(S, { x, y, len, rad, depth = 1, seed = 2 }) {
+    x = Math.round(x * K); y = Math.round(y * K); len = Math.round(len * K); rad = Math.round(rad * K);
+    const r = rng(seed);
+    for (let dy = -rad; dy <= rad; dy++) {
+      const u = dy / rad, cyl = Math.sqrt(Math.max(0, 1 - u * u));
+      for (let dx = 0; dx < len; dx++) {
+        let v = (0.1 + 0.85 * Math.max(0, 0.6 * cyl - 0.45 * u)) * (0.6 + 0.4 * (0.5 + 0.5 * Math.cos(u * Math.PI * 4)));
+        if (r() < 0.06) v *= 0.2;
+        S.set(x + dx, y + dy, v * depth);
+      }
+    }
+  }
+
+  function render(canvas, W, H, theme, draw, opts = {}) {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    const cols = Math.floor(W / CELL), rows = Math.floor(H / CELL);
+    const S = makeScene(cols, rows);
+    // A cena desenha em unidades de 3px; S.u preenche o bloco correspondente na grade fina.
+    S.u = (x, y, v) => { for (let dy = 0; dy < K; dy++) for (let dx = 0; dx < K; dx++) S.set(Math.round(x * K + dx), Math.round(y * K + dy), v); };
+    draw(S, cols / K, rows / K);
+    const ink = theme === 'dark' ? '226,230,226' : '44,40,34';
+    ctx.fillStyle = `rgba(${ink},${opts.alpha ?? 0.55})`;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      let v = S.L[y * cols + x]; if (!v) continue;
+      if (opts.mask) v *= opts.mask(x / K, y / K);
+      v = Math.pow(v, 0.7);
+      if (v > BAYER[y & 3][x & 3]) ctx.fillRect(x * CELL, y * CELL, 1.25, 1.25);
+    }
+    if (opts.after) opts.after(ctx, W, H, theme);
+  }
+
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const accentOf = (t) => (t === 'dark' ? '#93a6ef' : '#2e4a9e');
+
+  const TASKS = `
+    <div class="sx-row done"><i class="sx-dot done"></i><span>Pagar a fatura do cartão</span></div>
+    <div class="sx-row done"><i class="sx-dot done"></i><span>Treino A: peito e tríceps</span></div>
+    <div class="sx-row"><i class="sx-dot"></i><span>Estudar PSM I · 40 min</span></div>
+    <div class="sx-row"><i class="sx-dot"></i><span>Ler 20 páginas</span></div>`;
+  const MONEY = `<div class="sx-card"><h4>Dinheiro</h4><div class="sx-money">R$ 84,20<small>para gastar hoje</small></div></div>`;
+  const NAV = `<div class="sx-nav"><span class="on">Hoje</span><span>Finanças</span><b>+</b><span>Tarefas</span><span>Mais</span></div>`;
+  const HEAD = `<div class="sx-top"><i class="sx-logo"></i>Sísifo</div><div class="sx-date">quinta-feira, 30 de outubro</div>`;
+  const HL = `<div class="sx-h">3 de 7 feitos</div><div class="sx-cap">Faltam 4 itens entre tarefas, hábitos e treino.</div>`;
+  const SLOPE_SVG = `<svg viewBox="0 0 240 60"><path d="M0 60 L0 54 L8 54 L226 12 L240 12 L240 60Z" fill="currentColor" opacity=".06"/><line x1="8" y1="54" x2="226" y2="12" stroke="currentColor" stroke-opacity=".25" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="54" x2="101" y2="36" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/><circle cx="103" cy="27" r="8" fill="var(--accent)"/></svg>`;
+
+  const VARIANTS = {
+    a: {
+      html: `<div class="sx-ui">${HEAD}<div class="sx-card sx-herocard" style="margin-top:8px">${HL}${SLOPE_SVG}</div><div class="sx-card"><h4>Tarefas de hoje</h4>${TASKS}</div>${MONEY}${NAV}</div>`,
+      paint(cv, t) {
+        render(cv, 280, 580, t, (S) => {
+          column(S, { x: 78, base: 196, h: 178, w: 15, seed: 3 });
+          column(S, { x: 62, base: 192, h: 118, w: 9, broken: 0.32, depth: 0.7, seed: 5 });
+          column(S, { x: 46, base: 190, h: 70, w: 7, broken: 0.5, depth: 0.5, seed: 8 });
+          drum(S, { x: 18, y: 188, len: 16, rad: 3, depth: 0.6 });
+        }, { alpha: t === 'dark' ? 0.5 : 0.42, mask: (x) => clamp((x - 22) / 40) });
+      },
+    },
+    b: {
+      html: `<div class="sx-ui">${HEAD}<div class="sx-band"><div style="padding-top:2px">${HL}</div></div><div class="sx-card" style="margin-top:0"><h4>Tarefas de hoje</h4>${TASKS}</div>${MONEY}${NAV}</div>`,
+      paint(cv, t) {
+        render(cv, 280, 580, t, (S, cols) => {
+          column(S, { x: 60, base: 86, h: 62, w: 7, broken: 0.25, depth: 0.75, seed: 11 });
+          column(S, { x: 74, base: 86, h: 70, w: 8, seed: 12 });
+          column(S, { x: 88, base: 86, h: 66, w: 7, broken: 0.15, depth: 0.85, seed: 13 });
+          drum(S, { x: 34, y: 84, len: 12, rad: 2, depth: 0.6 });
+          for (let x = 0; x < cols; x++) { S.u(x, 87, 0.6); if (x % 2) S.u(x, 88, 0.3); }
+        }, { alpha: t === 'dark' ? 0.6 : 0.5, mask: (x, y) => clamp((x - 28) / 30) * clamp((92 - y) / 6) });
+      },
+    },
+    c: {
+      html: `<div class="sx-ui">${HEAD}<div style="height:228px">${HL}</div><div class="sx-card" style="margin-top:0"><h4>Tarefas de hoje</h4>${TASKS}</div>${MONEY}${NAV}</div>`,
+      paint(cv, t) {
+        const lineY = (x, cols) => 88 - 44 * (x / cols); // em células
+        const T = 3 / 7;
+        render(cv, 280, 580, t, (S, cols, rows) => {
+          column(S, { x: 16, base: rows, h: 150, w: 10, depth: 0.28, seed: 21 });
+          column(S, { x: 54, base: rows, h: 120, w: 9, broken: 0.3, depth: 0.22, seed: 22 });
+          for (let x = 0; x < cols; x++) {
+            const ly = Math.round(lineY(x, cols));
+            S.u(x, ly, 0.95); S.u(x, ly + 1, 0.7);
+            for (let y = ly + 2; y < ly + 26; y++) S.u(x, y, (0.42 - (y - ly) * 0.015) * (0.8 + 0.4 * Math.random()));
+          }
+          const crest = (x) => Math.round(lineY(x, cols));
+          column(S, { x: 70, base: crest(70), h: 26, w: 5, broken: 0.35, seed: 31 });
+          column(S, { x: 79, base: crest(79), h: 34, w: 5, seed: 32 });
+          column(S, { x: 88, base: crest(88), h: 30, w: 5, broken: 0.2, seed: 33 });
+        }, {
+          alpha: t === 'dark' ? 0.6 : 0.5,
+          after(ctx, W) {
+            const cols = W / 3;
+            const px = (x) => x * 3, py = (x) => lineY(x, cols) * 3;
+            const bx = cols * T;
+            ctx.strokeStyle = accentOf(t); ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(0, py(0)); ctx.lineTo(px(bx), py(bx)); ctx.stroke();
+            ctx.fillStyle = accentOf(t);
+            ctx.beginPath(); ctx.arc(px(bx) + 3, py(bx) - 11, 10, 0, Math.PI * 2); ctx.fill();
+          },
+        });
+      },
+    },
+  };
+
+  let theme = 'dark';
+  function paintAll() {
+    document.querySelectorAll('.sx-phone').forEach((ph) => {
+      const v = VARIANTS[ph.dataset.v];
+      ph.dataset.theme = theme;
+      if (!ph.querySelector('canvas')) ph.innerHTML = '<canvas></canvas>' + v.html;
+      v.paint(ph.querySelector('canvas'), theme);
+    });
+  }
+  document.querySelectorAll('.sx-switch button').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    theme = b.dataset.t;
+    document.querySelectorAll('.sx-switch button').forEach((o) => o.classList.toggle('on', o === b));
+    paintAll();
+  }));
+  paintAll();
+})();
+</script>
