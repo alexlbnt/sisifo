@@ -5,6 +5,8 @@ import { useStorageMode } from '@/components/layout/StorageWarning';
 import { ThemeSelector } from '@/components/layout/ThemeToggle';
 import { CategoriesModal } from '@/features/finance/components/CategoriesModal';
 import { AreasModal } from '@/features/personal/areas/AreasModal';
+import { DesktopCard } from '@/features/desktop/DesktopCard';
+import { isDesktop } from '@/features/desktop/env';
 import { ErrorsCard } from '@/features/errors/ErrorsCard';
 import { NotificationsCard } from '@/features/notifications/NotificationsCard';
 import { PanelCard } from '@/features/panel/PanelCard';
@@ -44,6 +46,8 @@ export function SettingsPage() {
 
       <div className="flex max-w-2xl flex-col gap-4">
         <SyncCard />
+
+        {isDesktop() && <DesktopCard />}
 
         <NotificationsCard />
 

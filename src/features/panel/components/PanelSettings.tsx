@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { BellRing, Download, ExternalLink, LocateFixed, Maximize, Minus, Plus, Trash2, X } from 'lucide-react';
+import { isDesktop } from '@/features/desktop/env';
 import { cn } from '@/lib/cn';
 import { promptInstall, useInstallStore } from '@/features/pwa/installStore';
 import { playAlarm, unlockAudio } from '../alarm';
@@ -248,7 +249,7 @@ export function PanelSettings({ onClose }: { onClose: () => void }) {
               <Trash2 className="size-5" aria-hidden /> Zerar tempo de foco das tarefas
             </button>
             <a href="/" className={actionBtn}>
-              <ExternalLink className="size-5" aria-hidden /> Abrir o Sísifo completo
+              <ExternalLink className="size-5" aria-hidden /> {isDesktop() ? 'Voltar ao app' : 'Abrir o Sísifo completo'}
             </a>
           </Section>
         </div>
