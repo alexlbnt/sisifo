@@ -34,6 +34,9 @@ export const CHANNEL = {
   summaryRequest: 'sisifo:summary-request',
 } as const;
 
+/** Evento que as janelas leves emitem ao aparecer: hora de a janela principal sincronizar. */
+export const WINDOW_FOCUSED = 'sisifo:window-focused';
+
 export class BridgeTimeout extends Error {
   constructor() {
     super('A janela principal não respondeu a tempo.');

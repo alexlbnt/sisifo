@@ -4,7 +4,7 @@ import { pendingToday } from '@/features/personal/selectors';
 import { usePersonalStore } from '@/features/personal/store';
 import { syncNow } from '@/features/sync/engine';
 import { todayISO, type ISODate } from '@/lib/dates';
-import { createBridgeHost, type BridgeCommand, type BridgeSummary } from './bridge';
+import { createBridgeHost, WINDOW_FOCUSED, type BridgeCommand, type BridgeSummary } from './bridge';
 import { native } from './native';
 import { tauriTransport } from './tauriTransport';
 
@@ -13,9 +13,6 @@ import { tauriTransport } from './tauriTransport';
  * janelas leves e publica o resumo (número de pendências para a bandeja).
  * Roda no app e no painel (as duas entradas), com ou sem login: os dados são locais.
  */
-
-/** Evento que as janelas leves emitem ao aparecer: hora de sincronizar. */
-export const WINDOW_FOCUSED = 'sisifo:window-focused';
 
 export function createHostHandlers(deps: { today?: () => ISODate } = {}) {
   const today = deps.today ?? todayISO;

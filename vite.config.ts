@@ -81,14 +81,14 @@ export default defineConfig({
       },
     }),
     {
-      // O plugin do PWA põe o manifest do app em toda página; o painel tem o seu.
+      // O plugin do PWA põe o manifest do app em toda página; o painel tem o seu e as janelas do desktop não usam nenhum.
       name: 'sisifo-panel-manifest',
       enforce: 'post',
       apply: 'build',
       transformIndexHtml: {
         order: 'post',
         handler: (html, ctx) =>
-          ctx.path.endsWith('/painel.html') ? html.replace(/<link rel="manifest" href="\/manifest\.webmanifest"[^>]*>/, '') : html,
+          ctx.path.endsWith('/painel.html') || ctx.path.endsWith('/desktop.html') ? html.replace(/<link rel="manifest" href="\/manifest\.webmanifest"[^>]*>/, '') : html,
       },
     },
   ],
@@ -98,6 +98,8 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         painel: fileURLToPath(new URL('./painel.html', import.meta.url)),
+        // Janelas leves do executável (captura...): sem stores, ver src/desktop-main.tsx.
+        desktop: fileURLToPath(new URL('./desktop.html', import.meta.url)),
       },
     },
   },
