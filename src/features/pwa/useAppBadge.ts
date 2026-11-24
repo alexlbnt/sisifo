@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { isDueOn, tasksForDay } from '@/features/personal/selectors';
+import { pendingToday } from '@/features/personal/selectors';
 import { usePersonalStore } from '@/features/personal/store';
 import { todayISO } from '@/lib/dates';
 
@@ -19,10 +19,7 @@ export function useAppBadge() {
   useEffect(() => {
     const nav = navigator as BadgeNavigator;
     if (!nav.setAppBadge) return;
-    const today = todayISO();
-    const pending =
-      tasksForDay(tasks, today).filter((t) => t.status !== 'done').length +
-      habits.filter((h) => isDueOn(h, today) && !h.completions.includes(today)).length;
+    const pending = pendingToday(tasks, habits, todayISO());
     const update = pending > 0 ? nav.setAppBadge(pending) : nav.clearAppBadge?.();
     void update?.catch(() => undefined);
   }, [tasks, habits]);

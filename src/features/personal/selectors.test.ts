@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeStreak, goalProgress, trainingStats } from './selectors';
-import type { Goal, Habit, WorkoutSession } from './types';
+import { computeStreak, goalProgress, pendingToday, trainingStats } from './selectors';
+import type { Goal, Habit, Task, WorkoutSession } from './types';
 
 const habit = (schedule: number[], completions: string[]): Habit => ({
   id: 'h',
@@ -79,5 +79,30 @@ describe('trainingStats', () => {
     expect(stats.sessionsThisWeek).toBe(1);
     expect(stats.minutesThisWeek).toBe(60);
     expect(stats.activeWeeksStreak).toBe(3);
+  });
+});
+
+describe('pendingToday', () => {
+  const task = (id: string, date: string, status: Task['status'] = 'todo'): Task => ({
+    id,
+    title: id,
+    area: 'routine',
+    status,
+    date,
+    createdAt: '2026-10-01T00:00:00Z',
+  });
+
+  it('soma tarefas de hoje não concluídas e hábitos previstos hoje ainda não feitos', () => {
+    const tasks = [task('a', TODAY), task('b', TODAY, 'done'), task('c', '2026-10-10'), task('d', '2026-10-08')];
+    const habits = [
+      habit([0, 1, 2, 3, 4, 5, 6], []), // pendente hoje
+      habit([0, 1, 2, 3, 4, 5, 6], [TODAY]), // feito hoje
+      habit([1], []), // só às segundas: não conta numa sexta
+    ];
+    expect(pendingToday(tasks, habits, TODAY)).toBe(2);
+  });
+
+  it('dia sem nada pendente dá zero', () => {
+    expect(pendingToday([task('b', TODAY, 'done')], [], TODAY)).toBe(0);
   });
 });

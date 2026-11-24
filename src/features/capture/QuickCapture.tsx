@@ -5,13 +5,13 @@ import { Button, Field, Input, Modal, SegmentedControl, Select } from '@/compone
 import { categoriesFor, useCategories } from '@/features/finance/categories';
 import { useFinanceStore } from '@/features/finance/store';
 import { useAreaLookup, useAreas } from '@/features/personal/meta';
-import { usePersonalStore } from '@/features/personal/store';
 import { PRIORITY_LABELS } from '@/features/personal/tasks/TaskForm';
 import { useShortcutParam } from '@/hooks/useShortcutParam';
 import { cn } from '@/lib/cn';
 import { relativeDay, todayISO } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
+import { applyCapture } from './apply';
 import { parseCapture, type CaptureGuess } from './parse';
 
 export const useCaptureStore = create<{ open: boolean; setOpen: (open: boolean) => void }>()((set) => ({
@@ -69,8 +69,6 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
   const id = useId();
   const categories = useCategories();
   const transactions = useFinanceStore((s) => s.transactions);
-  const addTransaction = useFinanceStore((s) => s.addTransaction);
-  const addTask = usePersonalStore((s) => s.addTask);
   const areas = useAreas();
   const areaLookup = useAreaLookup();
   const today = todayISO();
@@ -90,25 +88,7 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!guess || forcedTransactionWithoutAmount) return;
-    if (guess.kind === 'transaction') {
-      addTransaction({
-        title: guess.title,
-        amountCents: guess.amountCents,
-        type: guess.type,
-        category: category ?? guess.category,
-        date: guess.date,
-      });
-      setSaved(`${guess.type === 'income' ? 'Receita' : 'Despesa'} "${guess.title}" de ${formatBRL(guess.amountCents)} adicionada.`);
-    } else {
-      addTask({
-        title: guess.title,
-        area: guess.area ?? areas.find((a) => !a.archived)?.id ?? 'routine',
-        date: guess.date,
-        time: guess.time,
-        priority: guess.priority,
-      });
-      setSaved(`Tarefa "${guess.title}" adicionada para ${relativeDay(guess.date, today).toLowerCase()}.`);
-    }
+    setSaved(applyCapture(guess, { category: category ?? undefined, today }));
     haptic();
     setText('');
     setForce(undefined);

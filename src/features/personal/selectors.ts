@@ -161,6 +161,14 @@ export function tasksForDay(tasks: Task[], day: ISODate): Task[] {
   return tasks.filter((t) => t.date === day);
 }
 
+/** O que falta hoje: tarefas do dia não concluídas e hábitos previstos ainda não feitos (número no ícone e na bandeja). */
+export function pendingToday(tasks: Task[], habits: Habit[], today: ISODate): number {
+  return (
+    tasksForDay(tasks, today).filter((t) => t.status !== 'done').length +
+    habits.filter((h) => isDueOn(h, today) && !h.completions.includes(today)).length
+  );
+}
+
 /** Tarefas não concluídas com data anterior a `today`. */
 export function overdueTasks(tasks: Task[], today: ISODate): Task[] {
   return tasks
