@@ -57,6 +57,7 @@ export async function installDesktopHost(): Promise<void> {
     void native.setTrayPending(handlers.summary().pending).catch(() => undefined);
   };
   publish();
+  void native.appReady().catch(() => undefined);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   usePersonalStore.subscribe(() => {

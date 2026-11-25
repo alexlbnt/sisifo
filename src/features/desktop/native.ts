@@ -16,6 +16,8 @@ async function invoke<T = void>(command: string, args?: Record<string, unknown>)
 }
 
 export const native = {
+  /** O app abriu de verdade: a casca passa a abrir direto no site (já guardado para uso sem internet). */
+  appReady: () => invoke('app_ready'),
   setTrayPending: (count: number) => invoke('set_tray_pending', { count }),
   hideCapture: () => invoke('hide_capture'),
   getDesktopSettings: () => invoke<DesktopSettings>('get_desktop_settings'),

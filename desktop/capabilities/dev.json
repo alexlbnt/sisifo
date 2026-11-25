@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "dev",
+  "description": "Só no desenvolvimento (tauri.dev.conf.json): o mesmo acesso para o Vite local.",
+  "windows": [
+    "main",
+    "capture"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:5173/*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "allow-app-ready",
+    "allow-set-tray-pending",
+    "allow-hide-capture",
+    "allow-get-desktop-settings",
+    "allow-set-desktop-settings",
+    "allow-open-panel",
+    "allow-open-app"
+  ]
+}

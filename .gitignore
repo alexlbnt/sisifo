@@ -9,3 +9,7 @@ coverage
 
 # Prisma Client gerado no build
 server/generated
+
+# Executável (Tauri)
+desktop/target/
+desktop/gen/

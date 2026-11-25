@@ -34,3 +34,26 @@ for (const { file, size, fill } of ICONS) {
   await sharp(icon(size, fill)).png().toFile(file);
 }
 console.log(`${ICONS.length} ícones gerados em public/.`);
+
+// Bandeja do executável (desktop/): a marca com o número do que falta hoje no canto.
+// 32×32 para ficar nítido na bandeja do Windows em escala 200%.
+const TRAY = 32;
+const TRAY_LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '9+'];
+
+function trayIcon(label) {
+  const base = icon(TRAY, 0.82).toString().replace('</svg>', '');
+  if (label === '0') return Buffer.from(`${base}</svg>`);
+  const r = label.length > 1 ? 9 : 8;
+  const fontSize = label.length > 1 ? 10 : 12;
+  const badge =
+    `<circle cx="${TRAY - r}" cy="${TRAY - r}" r="${r}" fill="${STONE}" stroke="${BG}" stroke-width="1.5"/>` +
+    `<text x="${TRAY - r}" y="${TRAY - r}" dy="0.35em" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" ` +
+    `font-weight="700" font-size="${fontSize}" fill="${BG}">${label}</text>`;
+  return Buffer.from(`${base}${badge}</svg>`);
+}
+
+for (const label of TRAY_LABELS) {
+  const name = label === '9+' ? '9plus' : label;
+  await sharp(trayIcon(label)).png().toFile(`desktop/icons/tray-${name}.png`);
+}
+console.log(`${TRAY_LABELS.length} ícones da bandeja gerados em desktop/icons/.`);

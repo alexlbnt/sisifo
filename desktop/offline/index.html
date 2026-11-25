@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sísifo</title>
+    <!-- Embutida no executável: só aparece na primeira abertura, antes de o site ficar guardado no PC. -->
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid; place-items: center;
+        font: 15px/1.5 system-ui, 'Segoe UI', sans-serif;
+        background: #0d0f0e; color: #e6eae7;
+      }
+      @media (prefers-color-scheme: light) { body { background: #ebe7df; color: #1a1d1c; } }
+      main { text-align: center; padding: 24px; }
+      svg { width: 56px; height: 56px; margin-bottom: 12px; }
+      p { margin: 4px 0; opacity: .75; }
+      h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M5 25 L27 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" />
+        <circle cx="14.6" cy="10.6" r="5" fill="#93a6ef" />
+      </svg>
+      <div id="checking">
+        <h1>Abrindo o Sísifo…</h1>
+      </div>
+      <div id="offline" hidden>
+        <h1>Sem conexão</h1>
+        <p>Na primeira vez, o Sísifo precisa de internet para abrir.</p>
+        <p>Tentando de novo…</p>
+      </div>
+    </main>
+    <script>
+      var APP = 'https://sisifo-two.vercel.app/';
+      var RETRY_MS = 15000;
+
+      function tryOpen() {
+        var ctrl = new AbortController();
+        var timer = setTimeout(function () { ctrl.abort(); }, 8000);
+        fetch(APP + 'favicon.svg', { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal })
+          .then(function () { location.replace(APP); })
+          .catch(function () {
+            document.getElementById('checking').hidden = true;
+            document.getElementById('offline').hidden = false;
+          })
+          .finally(function () { clearTimeout(timer); });
+      }
+
+      tryOpen();
+      setInterval(tryOpen, RETRY_MS);
+      addEventListener('online', tryOpen);
+    </script>
+  </body>
+</html>

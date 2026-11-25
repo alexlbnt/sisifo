@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Janelas do Sísifo carregadas do site publicado. Só este domínio fala com os comandos nativos.",
+  "windows": [
+    "main",
+    "capture"
+  ],
+  "remote": {
+    "urls": [
+      "https://sisifo-two.vercel.app/*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "allow-app-ready",
+    "allow-set-tray-pending",
+    "allow-hide-capture",
+    "allow-get-desktop-settings",
+    "allow-set-desktop-settings",
+    "allow-open-panel",
+    "allow-open-app"
+  ]
+}
