@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BodyWeight } from '../types';
-import { latestWeight, periodChange, periodStart } from './view';
+import { latestWeight, periodChange, periodStart, weightReplaced } from './view';
 
 const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
 const TODAY = '2026-11-25';
@@ -25,5 +25,15 @@ describe('período do gráfico', () => {
   it('latestWeight devolve a pesagem mais recente', () => {
     expect(latestWeight([w('2026-11-20', 68), w('2026-11-24', 69), w('2026-11-01', 70)])?.date).toBe('2026-11-24');
     expect(latestWeight([])).toBeNull();
+  });
+});
+
+describe('weightReplaced', () => {
+  const ws = [w('2026-11-20', 68), w('2026-11-24', 69)];
+  it('acha a pesagem que seria substituída, ao registrar ou ao mover uma pesagem para outro dia', () => {
+    expect(weightReplaced(ws, '2026-11-24')?.kg).toBe(69);
+    expect(weightReplaced(ws, '2026-11-24', ws[0])?.kg).toBe(69);
+    expect(weightReplaced(ws, '2026-11-24', ws[1])).toBeUndefined();
+    expect(weightReplaced(ws, '2026-11-25')).toBeUndefined();
   });
 });

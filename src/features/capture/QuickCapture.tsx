@@ -14,7 +14,7 @@ import { formatBRL } from '@/lib/money';
 import { usePersonalStore } from '@/features/personal/store';
 import { formatKg } from '@/features/personal/weight/format';
 import { applyCapture } from './apply';
-import { parseCapture, WEIGHT_HINT, type CaptureGuess } from './parse';
+import { looksLikeWeight, parseCapture, WEIGHT_HINT, type CaptureGuess } from './parse';
 
 export const useCaptureStore = create<{ open: boolean; setOpen: (open: boolean) => void }>()((set) => ({
   open: false,
@@ -154,6 +154,8 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
             {saved}
           </p>
         )}
+
+        {!guess && looksLikeWeight(text) && <p className="text-sm text-expense">{WEIGHT_HINT}</p>}
 
         {guess && (
           <div className="rounded-xl border border-line p-3">

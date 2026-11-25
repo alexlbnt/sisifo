@@ -120,6 +120,12 @@ describe('peso na revisão', () => {
     expect(weekHighlights(s, () => '')).toContain('Peso parado há 4 semanas.');
   });
 
+  it('a meta de peso não repete o destaque da linha de peso', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising, goals: [weightGoal], goalValue: (_g, upTo) => (upTo >= MONDAY ? 70.4 : 70) }));
+    const lines = weekHighlights(s, (goal) => `META ${goal.title}`);
+    expect(lines.some((l) => l.startsWith('META'))).toBe(false);
+  });
+
   it('sem meta, o destaque só traz a variação', () => {
     const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising }));
     expect(weekHighlights(s, () => '')).toContain('Peso: +0,4 kg na semana.');

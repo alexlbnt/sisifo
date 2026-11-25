@@ -20,6 +20,11 @@ export function latestWeight(weights: BodyWeight[]): BodyWeight | null {
   return last;
 }
 
+/** A pesagem que gravar em `date` substituiria (sem contar a que está sendo editada). */
+export function weightReplaced(weights: BodyWeight[], date: ISODate, editing?: BodyWeight | null): BodyWeight | undefined {
+  return weights.find((w) => w.date === date && w.date !== editing?.date);
+}
+
 /**
  * Variação da tendência no período: a de hoje menos a do começo. Se o período
  * começa antes da primeira pesagem, vale a primeira. null com menos de duas pesagens.

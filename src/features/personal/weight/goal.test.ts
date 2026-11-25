@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addDaysISO } from '@/lib/dates';
 import type { BodyWeight, Goal } from '../types';
-import { activeWeightGoal, DEFAULT_PACE, PACE_LABELS, paceStatus, plateauMessage } from './goal';
+import { activeWeightGoal, DEFAULT_PACE, PACE_LABELS, paceStatus, plateauMessage, weightGoalError } from './goal';
 
 const TODAY = '2026-11-25';
 const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
@@ -100,5 +100,13 @@ describe('plateauMessage', () => {
     const losing = paceStatus(goal({ start: 80, target: 75 }), series(21, () => 78), TODAY);
     expect(plateauMessage(losing)).toBe('Peso parado há 3 semanas. Para seguir perdendo, reduza as calorias.');
     expect(plateauMessage(paceStatus(goal(), series(21, perWeek(68, 0.3)), TODAY))).toBeNull();
+  });
+});
+
+describe('weightGoalError', () => {
+  it('exige o peso de partida, para a meta saber se é de ganho ou de perda', () => {
+    expect(weightGoalError({ start: undefined, target: 68 })).toBe('Informe o peso de partida em "Começa em" (o de hoje, se ainda não há pesagens).');
+    expect(weightGoalError({ start: 75, target: 75 })).toBe('O alvo precisa ser diferente do peso de partida.');
+    expect(weightGoalError({ start: 75, target: 68 })).toBeNull();
   });
 });

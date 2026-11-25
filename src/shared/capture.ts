@@ -63,6 +63,9 @@ export type CaptureGuess = TransactionGuess | TaskGuess | WeightGuess;
 /** O que a prévia diz quando a pessoa força "Peso" numa frase que não é pesagem. */
 export const WEIGHT_HINT = 'Escreva o peso assim: "peso 68,4".';
 
+/** A frase começa como pesagem ("peso 68…"). Se não fechar, não vira lançamento nem tarefa. */
+export const looksLikeWeight = (input: string) => /^\s*peso\s*:?\s*\d/i.test(input);
+
 /** Faixa aceita numa pesagem (a mesma do schema). */
 const WEIGHT_MIN = 20;
 const WEIGHT_MAX = 300;
@@ -73,11 +76,12 @@ const WEIGHT_MAX = 300;
  * uma data de hoje ou antes. Senão, null e a frase segue o parser normal.
  */
 function parseWeight(input: string, today: ISODate): WeightGuess | null {
-  const m = /^\s*peso\s*:?\s*(\d{2,3}(?:[.,]\d)?)\s*(?:kg)?(?=\s|$)(.*)$/i.exec(input);
+  // Aceita 2 casas (balanças), "kg", "kgs", "quilos" e o ponto final do ditado.
+  const m = /^\s*peso\s*:?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:kgs?|quilos?)?(?=[\s.!]|$)(.*)$/i.exec(input);
   if (!m) return null;
-  const kg = Number(m[1]!.replace(',', '.'));
+  const kg = Math.round(Number(m[1]!.replace(',', '.')) * 10) / 10;
   if (kg < WEIGHT_MIN || kg > WEIGHT_MAX) return null;
-  const date = extractDate(` ${m[2]} `, today);
+  const date = extractDate(` ${m[2]!.replace(/[.!]+\s*$/, '')} `, today);
   if (date.rest.trim()) return null;
   const day = date.value ?? today;
   if (day > today) return null;
@@ -249,6 +253,9 @@ export function parseCapture(input: string, ctx: CaptureContext, force?: Capture
   if (!force || force === 'weight') {
     const weight = parseWeight(input, ctx.today);
     if (weight) return weight;
+    // "peso 70 amanhã", "peso 5": sem palpite. Pelo Atalho do iPhone não há prévia,
+    // e um palpite aqui gravaria uma despesa ou tarefa falsa.
+    if (looksLikeWeight(input)) return null;
     force = undefined;
   }
 

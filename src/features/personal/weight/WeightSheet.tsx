@@ -4,7 +4,7 @@ import { todayISO, type ISODate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { usePersonalStore } from '../store';
 import type { BodyWeight } from '../types';
-import { latestWeight } from './view';
+import { latestWeight, weightReplaced } from './view';
 
 interface WeightSheetProps {
   open: boolean;
@@ -34,7 +34,7 @@ function WeightSheetInner({ onClose, weight }: WeightSheetProps) {
 
   const value = parseKg(kg);
   const valid = Number.isFinite(value) && value >= 20 && value <= 300 && Boolean(date) && date <= today;
-  const replaces = !weight && weights.find((w) => w.date === date);
+  const replaces = weightReplaced(weights, date, weight);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

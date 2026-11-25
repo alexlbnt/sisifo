@@ -196,7 +196,10 @@ export function weekHighlights(summary: WeekSummary, goalTitle: (goal: Goal, del
     lines.push(`${Math.round((habits.done / habits.expected) * 100)}% dos hábitos cumpridos.`);
   }
   if (tasks.total > 0 && tasks.done / tasks.total >= 0.6) lines.push(`${tasks.done} de ${tasks.total} tarefas concluídas.`);
-  for (const { goal, delta } of summary.goals) if (delta > 0) lines.push(goalTitle(goal, delta));
+  // A meta de peso já aparece na linha de peso, com o sentido certo (ganho ou perda).
+  for (const { goal, delta } of summary.goals) {
+    if (delta > 0 && goal.source?.type !== 'bodyweight') lines.push(goalTitle(goal, delta));
+  }
   const weight = summary.weight;
   if (weight) {
     const { status } = weight;

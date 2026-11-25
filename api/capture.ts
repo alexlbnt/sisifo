@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { defaultCategories } from '../src/features/finance/defaultCategories.js';
 import { defaultAreas } from '../src/features/personal/defaultAreas.js';
-import { parseCapture, type CaptureContext } from '../src/shared/capture.js';
+import { looksLikeWeight, parseCapture, type CaptureContext } from '../src/shared/capture.js';
 import { localDate } from '../src/shared/dates.js';
 import { COLLECTION_SCHEMAS, type SyncChange } from '../src/shared/sync.js';
 import { isDatabaseConfigured } from '../server/db.js';
@@ -50,6 +50,9 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   const guess = parseCapture(text, ctx);
+  if (!guess && looksLikeWeight(text)) {
+    return reply(request, 'Não entendi o peso. Escreva assim: "peso 68,4" (de hoje ou de um dia que já passou).', {}, 400);
+  }
   if (!guess) return reply(request, 'Não entendi. Tente algo como "mercado 152,30", "estudar amanhã às 19h" ou "peso 68,4".', {}, 400);
 
   const now = new Date().toISOString();

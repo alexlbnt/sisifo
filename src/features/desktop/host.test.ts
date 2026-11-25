@@ -55,6 +55,11 @@ describe('host do desktop', () => {
     expect(useFinanceStore.getState().transactions).toHaveLength(0);
   });
 
+  it('pesagem que não fecha ("peso 70 amanhã") explica como escrever', async () => {
+    const reply = await handlers().handle({ type: 'capture.submit', text: 'peso 70 amanhã' });
+    expect(reply).toEqual({ ok: false, message: 'Escreva o peso assim: "peso 68,4".' });
+  });
+
   it('texto vazio não grava nada', async () => {
     for (const text of ['', '   ']) {
       expect(await handlers().handle({ type: 'capture.submit', text })).toEqual({ ok: false, message: 'Nada para registrar.' });

@@ -9,7 +9,7 @@ import { HORIZONS, HORIZON_ORDER, WORKOUT_KINDS, defaultAreaFor, selectableAreas
 import { usePersonalStore } from '../store';
 import { useExerciseNames } from '../training/ExerciseListSheet';
 import type { Area, Goal, GoalHorizon, GoalInput, GoalKind, GoalMeasure, GoalSource, WorkoutKind } from '../types';
-import { DEFAULT_PACE } from '../weight/goal';
+import { DEFAULT_PACE, weightGoalError } from '../weight/goal';
 import { trendAt } from '../weight/trend';
 import { parseGoalValue } from './goalFormat';
 import { sourceUnit } from './sources';
@@ -126,6 +126,8 @@ function GoalFormInner({ onClose, goal, preset }: GoalFormProps) {
           if (!habitId) return setError('Escolha o hábito que conta para a meta.');
           source = { type: 'habit', habitId };
         } else if (sourceType === 'bodyweight') {
+          const missing = weightGoalError({ start: startValue ?? undefined, target: targetValue });
+          if (missing) return setError(missing);
           const parsePace = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : undefined);
           const min = parsePace(minPace);
           const max = parsePace(maxPace);

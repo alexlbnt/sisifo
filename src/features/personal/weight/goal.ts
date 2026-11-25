@@ -63,6 +63,16 @@ export function activeWeightGoal(goals: Goal[]): Goal | null {
   return found;
 }
 
+/**
+ * O que falta numa meta de peso antes de salvar. Sem o peso de partida, a
+ * direção (ganho ou perda) sairia de "0" e toda meta pareceria de ganho.
+ */
+export function weightGoalError({ start, target }: { start: number | undefined; target: number }): string | null {
+  if (start === undefined) return 'Informe o peso de partida em "Começa em" (o de hoje, se ainda não há pesagens).';
+  if (start === target) return 'O alvo precisa ser diferente do peso de partida.';
+  return null;
+}
+
 /** Direção da meta: ganhar (alvo acima do início) ou perder. */
 export const goalDirection = (goal: Goal): 1 | -1 => ((goal.target ?? 0) >= (goal.start ?? 0) ? 1 : -1);
 
