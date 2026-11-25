@@ -1,0 +1,53 @@
+# Instalador do Sísifo para Windows e o latest.json da atualização automática.
+# Roda só nas tags do executável (sisifo-desktop-v-X.Y.Z); as tags do site
+# (sisifo-v-X.Y.Z) não geram executável nem Release.
+name: Desktop release
+
+on:
+  push:
+    tags: ['sisifo-desktop-v-*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versão da tag igual à do tauri.conf.json
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#sisifo-desktop-v-}"
+          CONF=$(node -p "require('./desktop/tauri.conf.json').version")
+          CARGO=$(grep -m1 '^version' desktop/Cargo.toml | cut -d'"' -f2)
+          echo "tag=$TAG conf=$CONF cargo=$CARGO"
+          [ "$TAG" = "$CONF" ] && [ "$TAG" = "$CARGO" ] || { echo "::error::A tag ($TAG) precisa ser igual à versão em desktop/tauri.conf.json ($CONF) e desktop/Cargo.toml ($CARGO)."; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Sísifo Desktop ${{ github.ref_name }}'
+          releaseBody: 'Instale com o Sísifo_*_x64-setup.exe abaixo. O Windows pode avisar "editor desconhecido": Mais informações → Executar assim mesmo.'
+          releaseDraft: false
+          includeUpdaterJson: true

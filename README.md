@@ -249,6 +249,29 @@ O widget nativo do app Atalhos **só executa atalhos**: não mostra dados, e ver
 
 As chaves são criadas e revogadas em **Configurações → Atalhos do iPhone**, que também traz o passo a passo dos atalhos e do Toque Traseiro (Ajustes → Acessibilidade → Toque → Tocar Atrás). O banco guarda só o hash (tabela `api_tokens`). Itens criados por essas rotas entram na sincronização e aparecem nos aparelhos na próxima rodada.
 
+## Desktop (Windows)
+
+Um executável para o computador, além do site e do PWA. Ele abre o **site publicado** (cada deploy atualiza o desktop também) e entra na sincronização como mais um aparelho.
+
+- **Bandeja:** o ícone perto do relógio mostra quantos itens faltam hoje. O menu tem Captura rápida, Abrir painel, Abrir Sísifo, Iniciar com o Windows e Sair. Fechar a janela só a esconde.
+- **Captura global:** `Ctrl+Alt+Espaço` em qualquer programa abre uma barra no centro da tela. "café 8,50" + Enter registra e fecha; Esc fecha sem registrar.
+- **Configurações → Desktop** (só no executável): trocar o atalho (combinações que viram caractere no AltGr do ABNT2 são recusadas) e ligar ou desligar o início com o Windows, que abre escondido na bandeja.
+- **Abrir painel:** a janela principal troca o app pelo Modo Painel; "Voltar ao app" nos ajustes do painel desfaz.
+- **Uma janela é a dona dos dados.** Só a janela principal (mesmo escondida) carrega as stores e sincroniza. A barra de captura é uma página leve (`desktop.html`) que manda o texto para ela pela ponte (`src/features/desktop/bridge.ts`). Assim nunca há duas cópias dos dados abertas.
+
+**Instalar:** baixe o `Sísifo_x.y.z_x64-setup.exe` em [Releases](https://github.com/alexlbnt/sisifo/releases). O instalador não pede administrador. O Windows pode avisar "editor desconhecido" (o executável não tem certificado): **Mais informações → Executar assim mesmo**. As versões novas são baixadas sozinhas e entram na próxima abertura.
+
+**Desenvolver:** precisa do Rust (rustup, toolchain MSVC) e do Visual Studio Build Tools com "Desenvolvimento para desktop com C++".
+
+```bash
+npm run desktop:dev     # sobe o Vite e abre o executável apontando para localhost:5173
+npm run desktop:build   # instalador em desktop/target/release/bundle/nsis/
+```
+
+**Lançar uma versão:** suba o número em `desktop/tauri.conf.json` e `desktop/Cargo.toml`, crie a tag `sisifo-desktop-v-X.Y.Z` e envie. O workflow `desktop-release.yml` gera o instalador e o `latest.json` da atualização. A numeração é separada da do site (`sisifo-v-X.Y.Z`), que não gera executável.
+
+Código: casca em Rust em `desktop/` (Tauri 2); app em `src/features/desktop/`. Design e plano em `docs/superpowers/specs/2026-11-24-desktop-design.md` e `docs/superpowers/plans/2026-11-24-desktop-v1.md`.
+
 ## Deploy na Vercel
 
 O `vercel.json` fixa o build (`npm run build`, que gera o Prisma Client e aplica as migrations) e reescreve as rotas para `index.html`, exceto `/api`.
