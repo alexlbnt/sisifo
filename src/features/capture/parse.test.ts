@@ -74,3 +74,37 @@ describe('captura rápida: tarefas', () => {
     expect(parseCapture('   ', ctx)).toBeNull();
   });
 });
+
+describe('captura rápida: peso', () => {
+  it.each([
+    ['peso 68,4', 68.4],
+    ['peso 68.4 kg', 68.4],
+    ['Peso: 68', 68],
+    ['peso 68,4kg', 68.4],
+    ['  PESO 102,5  ', 102.5],
+  ])('"%s" vira pesagem de hoje', (text, kg) => {
+    expect(parseCapture(text, ctx)).toEqual({ kind: 'weight', kg, date: ctx.today });
+  });
+
+  it('aceita uma data no passado ou hoje: "peso 68,4 ontem", "peso 70 dia 05/10"', () => {
+    expect(parseCapture('peso 68,4 ontem', ctx)).toEqual({ kind: 'weight', kg: 68.4, date: '2026-10-10' });
+    expect(parseCapture('peso 70 dia 05/10', ctx)).toEqual({ kind: 'weight', kg: 70, date: '2026-10-05' });
+  });
+
+  it.each(['café 8,50', 'peso', 'peso 5', 'peso 350', 'comprar peso de papel 12', 'ver peso 70 amanhã às 9h', 'peso 70 amanhã'])(
+    '"%s" não vira pesagem',
+    (text) => {
+      expect(parseCapture(text, ctx)?.kind).not.toBe('weight');
+    },
+  );
+});
+
+describe('captura rápida: trocar o tipo na prévia', () => {
+  it('forçar tarefa numa pesagem vira tarefa', () => {
+    expect(parseCapture('peso 68,4', ctx, 'task')?.kind).toBe('task');
+  });
+
+  it('forçar peso numa frase que não é pesagem devolve o palpite normal', () => {
+    expect(parseCapture('café 8,50', ctx, 'weight')?.kind).toBe('transaction');
+  });
+});

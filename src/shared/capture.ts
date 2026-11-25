@@ -52,7 +52,37 @@ export interface TaskGuess {
   area?: string;
 }
 
-export type CaptureGuess = TransactionGuess | TaskGuess;
+export interface WeightGuess {
+  kind: 'weight';
+  kg: number;
+  date: ISODate;
+}
+
+export type CaptureGuess = TransactionGuess | TaskGuess | WeightGuess;
+
+/** O que a prévia diz quando a pessoa força "Peso" numa frase que não é pesagem. */
+export const WEIGHT_HINT = 'Escreva o peso assim: "peso 68,4".';
+
+/** Faixa aceita numa pesagem (a mesma do schema). */
+const WEIGHT_MIN = 20;
+const WEIGHT_MAX = 300;
+
+/**
+ * "peso 68,4", "peso: 68.4 kg", "peso 68 ontem". Só com o prefixo, para não
+ * confundir com despesa ("café 8,50"), e só se depois do número vier no máximo
+ * uma data de hoje ou antes. Senão, null e a frase segue o parser normal.
+ */
+function parseWeight(input: string, today: ISODate): WeightGuess | null {
+  const m = /^\s*peso\s*:?\s*(\d{2,3}(?:[.,]\d)?)\s*(?:kg)?(?=\s|$)(.*)$/i.exec(input);
+  if (!m) return null;
+  const kg = Number(m[1]!.replace(',', '.'));
+  if (kg < WEIGHT_MIN || kg > WEIGHT_MAX) return null;
+  const date = extractDate(` ${m[2]} `, today);
+  if (date.rest.trim()) return null;
+  const day = date.value ?? today;
+  if (day > today) return null;
+  return { kind: 'weight', kg, date: day };
+}
 
 export interface CaptureContext {
   today: ISODate;
@@ -213,6 +243,14 @@ function hasKeyword(title: string): boolean {
 export function parseCapture(input: string, ctx: CaptureContext, force?: CaptureGuess['kind']): CaptureGuess | null {
   let text = ` ${input.trim()} `;
   if (!text.trim()) return null;
+
+  // Pesagem primeiro. Forçar "peso" numa frase que não é pesagem cai no palpite
+  // normal: a prévia mostra como escrever, como no lançamento sem valor.
+  if (!force || force === 'weight') {
+    const weight = parseWeight(input, ctx.today);
+    if (weight) return weight;
+    force = undefined;
+  }
 
   // Prefixos explícitos.
   const forceTask = force === 'task' || /^\s*(?:t:|tarefa:?\s)/i.test(text);

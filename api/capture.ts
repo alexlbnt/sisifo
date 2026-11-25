@@ -50,7 +50,7 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   const guess = parseCapture(text, ctx);
-  if (!guess) return reply(request, 'Não entendi. Tente algo como "mercado 152,30" ou "estudar amanhã às 19h".', {}, 400);
+  if (!guess) return reply(request, 'Não entendi. Tente algo como "mercado 152,30", "estudar amanhã às 19h" ou "peso 68,4".', {}, 400);
 
   const now = new Date().toISOString();
   const id = randomUUID();
@@ -73,6 +73,16 @@ export async function POST(request: Request): Promise<Response> {
     };
     const label = ctx.categories.find((c) => c.id === guess.category)?.label ?? guess.category;
     message = `${guess.type === 'income' ? 'Receita' : 'Despesa'} registrada: ${guess.title}, ${money(guess.amountCents)} (${label})`;
+  } else if (guess.kind === 'weight') {
+    // Uma pesagem por dia: o id é a data, e registrar de novo no dia substitui.
+    change = {
+      collection: 'bodyWeights',
+      id: guess.date,
+      updatedAt: now,
+      data: { id: guess.date, date: guess.date, kg: guess.kg, createdAt: now },
+    };
+    const when = guess.date === today ? 'hoje' : guess.date.split('-').reverse().slice(0, 2).join('/');
+    message = `Pesagem registrada: ${guess.kg.toLocaleString('pt-BR')} kg (${when})`;
   } else {
     const area = guess.area ?? ctx.areas.find((a) => !a.archived)?.id ?? 'routine';
     change = {
