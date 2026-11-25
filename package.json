@@ -66,5 +66,20 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "effect": "^3.22.5"
+    },
+    "@vercel/cli-config": {
+      "zod": "^4.6.7"
+    },
+    "workbox-build": {
+      "glob": "^14.0.6"
+    }
+  },
+  "allowScripts": {
+    "prisma": true,
+    "@prisma/engines": true
   }
 }

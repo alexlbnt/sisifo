@@ -13,3 +13,6 @@ server/generated
 # Executável (Tauri)
 desktop/target/
 desktop/gen/
+
+# Configuração local do Claude Code
+.claude/
