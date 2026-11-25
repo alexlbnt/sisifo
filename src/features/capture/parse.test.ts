@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultCategories } from '@/features/finance/defaultCategories';
 import { defaultAreas } from '@/features/personal/defaultAreas';
-import { parseCapture, type CaptureContext } from './parse';
+import { looksLikeWeight, parseCapture, type CaptureContext } from './parse';
 
 const ctx: CaptureContext = {
   today: '2026-10-11', // domingo
@@ -72,5 +72,67 @@ describe('captura rápida: tarefas', () => {
 
   it('texto vazio não gera nada', () => {
     expect(parseCapture('   ', ctx)).toBeNull();
+  });
+});
+
+describe('captura rápida: peso', () => {
+  it.each([
+    ['peso 68,4', 68.4],
+    ['peso 68.4 kg', 68.4],
+    ['Peso: 68', 68],
+    ['peso 68,4kg', 68.4],
+    ['  PESO 102,5  ', 102.5],
+  ])('"%s" vira pesagem de hoje', (text, kg) => {
+    expect(parseCapture(text, ctx)).toEqual({ kind: 'weight', kg, date: ctx.today });
+  });
+
+  it('aceita uma data no passado ou hoje: "peso 68,4 ontem", "peso 70 dia 05/10"', () => {
+    expect(parseCapture('peso 68,4 ontem', ctx)).toEqual({ kind: 'weight', kg: 68.4, date: '2026-10-10' });
+    expect(parseCapture('peso 70 dia 05/10', ctx)).toEqual({ kind: 'weight', kg: 70, date: '2026-10-05' });
+  });
+
+  it.each(['café 8,50', 'peso', 'peso 5', 'peso 350', 'comprar peso de papel 12', 'ver peso 70 amanhã às 9h', 'peso 70 amanhã'])(
+    '"%s" não vira pesagem',
+    (text) => {
+      expect(parseCapture(text, ctx)?.kind).not.toBe('weight');
+    },
+  );
+});
+
+describe('captura rápida: trocar o tipo na prévia', () => {
+  it('forçar tarefa numa pesagem vira tarefa', () => {
+    expect(parseCapture('peso 68,4', ctx, 'task')?.kind).toBe('task');
+  });
+
+  it('forçar peso numa frase que não é pesagem devolve o palpite normal', () => {
+    expect(parseCapture('café 8,50', ctx, 'weight')?.kind).toBe('transaction');
+  });
+});
+
+describe('captura rápida: frases de peso que não fecham', () => {
+  it.each([
+    ['peso 68,45', 68.5],
+    ['peso 68.44', 68.4],
+    ['peso 68,4.', 68.4],
+    ['peso 68,4 quilos', 68.4],
+    ['peso 68 kgs', 68],
+  ])('"%s" ainda é pesagem', (text, kg) => {
+    expect(parseCapture(text, ctx)).toEqual({ kind: 'weight', kg, date: ctx.today });
+  });
+
+  it.each(['peso 70 amanhã', 'peso 68 sábado', 'peso 5', 'peso 350', 'peso 68,4 depois do treino'])(
+    '"%s" não vira lançamento nem tarefa (sem palpite)',
+    (text) => {
+      expect(parseCapture(text, ctx)).toBeNull();
+      expect(looksLikeWeight(text)).toBe(true);
+    },
+  );
+
+  it('trocar o tipo na prévia ainda funciona', () => {
+    expect(parseCapture('peso 70 amanhã', ctx, 'task')?.kind).toBe('task');
+  });
+
+  it('"comprar peso de papel 12" não parece pesagem', () => {
+    expect(looksLikeWeight('comprar peso de papel 12')).toBe(false);
   });
 });

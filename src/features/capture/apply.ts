@@ -1,5 +1,6 @@
 import { useFinanceStore } from '@/features/finance/store';
 import { usePersonalStore } from '@/features/personal/store';
+import { formatKg } from '@/features/personal/weight/format';
 import { relativeDay, todayISO, type ISODate } from '@/lib/dates';
 import { formatBRL } from '@/lib/money';
 import type { CaptureContext, CaptureGuess } from './parse';
@@ -28,6 +29,10 @@ export function applyCapture(guess: CaptureGuess, opts: { category?: string; tod
     return `${guess.type === 'income' ? 'Receita' : 'Despesa'} "${guess.title}" de ${formatBRL(guess.amountCents)} adicionada.`;
   }
 
+  if (guess.kind === 'weight') {
+    usePersonalStore.getState().setBodyWeight({ date: guess.date, kg: guess.kg });
+    return `Pesagem de ${relativeDay(guess.date, today).toLowerCase()}: ${formatKg(guess.kg)} registrada.`;
+  }
   const { areas, addTask } = usePersonalStore.getState();
   addTask({
     title: guess.title,

@@ -4,6 +4,7 @@ import { seededRandom } from '@/lib/random';
 import { MOCK_SAVINGS_ID } from '@/features/finance/mock';
 import { defaultAreas } from './defaultAreas';
 import type {
+  BodyWeight,
   PlanExercise,
   Goal,
   GoalEntry,
@@ -63,6 +64,21 @@ export function createPersonalMock(): PersonalState {
 
   const goals: Goal[] = [
     tccGoal,
+    {
+      id: uid(),
+      title: 'Chegar a 72 kg',
+      description: 'Ganho limpo: de 0,25 a 0,5 kg por semana.',
+      horizon: 'medium',
+      area: 'training',
+      deadline: addDaysISO(today, 180),
+      subtasks: [],
+      kind: 'numeric',
+      target: 72,
+      start: 64,
+      unit: 'kg',
+      source: { type: 'bodyweight', minPerWeek: 0.25, maxPerWeek: 0.5 },
+      createdAt: stamp(120),
+    },
     {
       id: uid(),
       title: 'Supino 80 kg',
@@ -298,5 +314,26 @@ export function createPersonalMock(): PersonalState {
     }
   }
 
-  return { areas: defaultAreas(), goals, goalEntries, reviews: [], tasks, habits, workoutPlans, workoutSessions };
+  return { areas: defaultAreas(), goals, goalEntries, reviews: [], tasks, habits, workoutPlans, workoutSessions, bodyWeights: mockWeights(today) };
+}
+
+/**
+ * ~4 meses de pesagens, 4 a 5 por semana: sobe ~0,3 kg/semana a partir de 64 kg,
+ * com ±0,6 kg de ruído do dia a dia e um platô de 3 semanas no meio.
+ * Semente própria, para não mexer nos outros dados de exemplo.
+ */
+function mockWeights(today: string): BodyWeight[] {
+  const rng = seededRandom(23);
+  const perDay = 0.3 / 7;
+  const plateau = { from: 63, to: 42 }; // dias atrás
+  const out: BodyWeight[] = [];
+  let gained = 0;
+  for (let n = 120; n >= 0; n--) {
+    if (!(n <= plateau.from && n > plateau.to)) gained += perDay;
+    if (!rng.chance(0.65)) continue;
+    const date = addDaysISO(today, -n);
+    const kg = Math.round((64 + gained + (rng.next() - 0.5) * 1.2) * 10) / 10;
+    out.push({ id: date, date, kg, createdAt: `${date}T07:30:00.000Z` });
+  }
+  return out;
 }

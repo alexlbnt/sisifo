@@ -9,7 +9,7 @@ const TODAY = '2026-11-24';
 
 beforeEach(() => {
   useFinanceStore.setState({ transactions: [] });
-  usePersonalStore.setState({ tasks: [] });
+  usePersonalStore.setState({ tasks: [], bodyWeights: [] });
 });
 
 describe('applyCapture', () => {
@@ -37,5 +37,13 @@ describe('applyCapture', () => {
     const guess = parseCapture('café 8,50', captureContext(TODAY))!;
     applyCapture(guess, { today: TODAY, category: 'transport' });
     expect(useFinanceStore.getState().transactions[0]!.category).toBe('transport');
+  });
+
+  it('peso: grava a pesagem do dia e confirma', () => {
+    const guess = parseCapture('peso 68,4', captureContext(TODAY))!;
+    expect(guess.kind).toBe('weight');
+    const message = applyCapture(guess, { today: TODAY });
+    expect(usePersonalStore.getState().bodyWeights).toEqual([expect.objectContaining({ id: TODAY, kg: 68.4 })]);
+    expect(message).toBe('Pesagem de hoje: 68,4 kg registrada.');
   });
 });

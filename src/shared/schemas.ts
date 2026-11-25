@@ -134,6 +134,11 @@ export const goalSchema = z.object({
       z.object({ type: z.literal('exercise'), exercise: text(120) }),
       z.object({ type: z.literal('workouts'), kind: workoutKind.optional() }),
       z.object({ type: z.literal('habit'), habitId: id }),
+      z.object({
+        type: z.literal('bodyweight'),
+        minPerWeek: z.number().min(0).max(5).optional(),
+        maxPerWeek: z.number().min(0).max(5).optional(),
+      }),
     ])
     .optional(),
   createdAt: timestamp,
@@ -240,6 +245,17 @@ export const workoutSessionSchema = z.object({
   planId: id.optional(),
   exercises: z.array(sessionExerciseSchema).max(60).optional(),
 });
+
+/** Pesagem: uma por dia, com o id igual à data. */
+export const bodyWeightSchema = z
+  .object({
+    id: isoDate,
+    date: isoDate,
+    kg: z.number().min(20).max(300),
+    note: text(200).optional(),
+    createdAt: timestamp,
+  })
+  .refine((w) => w.id === w.date, { message: 'o id da pesagem é a data', path: ['id'] });
 
 /* ───────── Registros da sincronização ─────────
  * Etapas de meta e marcações de hábito sobem como registros próprios. Assim,

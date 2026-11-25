@@ -12,6 +12,8 @@ import type {
   Area,
   AreaDef,
   AreaInput,
+  BodyWeight,
+  BodyWeightInput,
   Goal,
   GoalEntry,
   GoalInput,
@@ -77,6 +79,11 @@ interface PersonalActions {
   addSession: (input: WorkoutSessionInput) => void;
   updateSession: (id: string, input: WorkoutSessionInput) => void;
   deleteSession: (id: string) => void;
+
+  /* Peso */
+  /** Grava a pesagem do dia (id = data). Registrar de novo no mesmo dia substitui. */
+  setBodyWeight: (input: BodyWeightInput) => void;
+  deleteBodyWeight: (date: ISODate) => void;
 
   replaceAll: (state: PersonalState) => void;
 }
@@ -432,11 +439,26 @@ export const usePersonalStore = create<PersonalStore>()(
       deleteSession: (id) =>
         set((s) => ({ workoutSessions: s.workoutSessions.filter((x) => x.id !== id) })),
 
+      setBodyWeight: ({ date, kg, note }) =>
+        set((s) => {
+          const previous = s.bodyWeights.find((w) => w.id === date);
+          const weight: BodyWeight = clean({
+            id: date,
+            date,
+            kg: Math.round(kg * 10) / 10,
+            note: note?.trim(),
+            createdAt: previous?.createdAt ?? new Date().toISOString(),
+          });
+          return { bodyWeights: [...s.bodyWeights.filter((w) => w.id !== date), weight] };
+        }),
+
+      deleteBodyWeight: (date) => set((s) => ({ bodyWeights: s.bodyWeights.filter((w) => w.id !== date) })),
+
       replaceAll: (state) => set(withDefaults(state)),
     }),
     {
       name: PERSONAL_STORAGE_KEY,
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localData),
       partialize: ({
         areas,
@@ -447,6 +469,7 @@ export const usePersonalStore = create<PersonalStore>()(
         habits,
         workoutPlans,
         workoutSessions,
+        bodyWeights,
       }): PersonalState => ({
         areas,
         goals,
@@ -456,9 +479,11 @@ export const usePersonalStore = create<PersonalStore>()(
         habits,
         workoutPlans,
         workoutSessions,
+        bodyWeights,
       }),
       // v2: áreas editáveis e ordem fixa nas etapas das metas.
       // v3: registros de metas numéricas/poupança e revisões semanais.
+      // v4: pesagens (bodyWeights).
       migrate: (persisted) => withDefaults(persisted as PersonalState),
     },
   ),
@@ -490,7 +515,7 @@ function nextOrder(goal: Goal): number {
  */
 export function withDefaults<T extends Partial<PersonalState>>(
   state: T,
-): T & { areas: AreaDef[]; goalEntries: GoalEntry[]; reviews: WeeklyReview[] } {
+): T & { areas: AreaDef[]; goalEntries: GoalEntry[]; reviews: WeeklyReview[]; bodyWeights: BodyWeight[] } {
   const goals = state.goals?.map((g) =>
     g.subtasks.every((st) => typeof st.order === 'number')
       ? g
@@ -502,5 +527,6 @@ export function withDefaults<T extends Partial<PersonalState>>(
     areas: state.areas?.length ? state.areas : defaultAreas(),
     goalEntries: state.goalEntries ?? [],
     reviews: state.reviews ?? [],
+    bodyWeights: state.bodyWeights ?? [],
   };
 }

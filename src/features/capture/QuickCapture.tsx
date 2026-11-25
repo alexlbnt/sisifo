@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
 import { create } from 'zustand';
-import { CircleCheck, ListTodo, Wallet, Zap } from 'lucide-react';
+import { CircleCheck, ListTodo, Scale, Wallet, Zap } from 'lucide-react';
 import { Button, Field, Input, Modal, SegmentedControl, Select } from '@/components/ui';
 import { categoriesFor, useCategories } from '@/features/finance/categories';
 import { useFinanceStore } from '@/features/finance/store';
@@ -11,8 +11,10 @@ import { cn } from '@/lib/cn';
 import { relativeDay, todayISO } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { formatBRL } from '@/lib/money';
+import { usePersonalStore } from '@/features/personal/store';
+import { formatKg } from '@/features/personal/weight/format';
 import { applyCapture } from './apply';
-import { parseCapture, type CaptureGuess } from './parse';
+import { looksLikeWeight, parseCapture, WEIGHT_HINT, type CaptureGuess } from './parse';
 
 export const useCaptureStore = create<{ open: boolean; setOpen: (open: boolean) => void }>()((set) => ({
   open: false,
@@ -83,11 +85,16 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
     [text, today, categories, transactions, areas, force],
   );
   const forcedTransactionWithoutAmount = force === 'transaction' && guess?.kind === 'task';
+  const forcedWeightWithoutValue = force === 'weight' && guess !== null && guess.kind !== 'weight';
+  const blocked = forcedTransactionWithoutAmount || forcedWeightWithoutValue;
   const category = guess?.kind === 'transaction' ? (categoryOverride ?? guess.category) : null;
+  const replaced = usePersonalStore((s) =>
+    guess?.kind === 'weight' ? s.bodyWeights.find((w) => w.date === guess.date) : undefined,
+  );
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!guess || forcedTransactionWithoutAmount) return;
+    if (!guess || blocked) return;
     setSaved(applyCapture(guess, { category: category ?? undefined, today }));
     haptic();
     setText('');
@@ -106,7 +113,7 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
           <Button variant="secondary" onClick={onClose}>
             Fechar
           </Button>
-          <Button type="submit" form={id} disabled={!guess || forcedTransactionWithoutAmount}>
+          <Button type="submit" form={id} disabled={!guess || blocked}>
             Salvar
           </Button>
         </>
@@ -148,20 +155,30 @@ function QuickCaptureInner({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
+        {!guess && looksLikeWeight(text) && <p className="text-sm text-expense">{WEIGHT_HINT}</p>}
+
         {guess && (
           <div className="rounded-xl border border-line p-3">
             <SegmentedControl<CaptureGuess['kind']>
               label="Tipo"
-              value={forcedTransactionWithoutAmount ? 'transaction' : guess.kind}
+              value={force && blocked ? force : guess.kind}
               onChange={(k) => setForce(k)}
               className="mb-3"
               options={[
                 { value: 'transaction', label: 'Lançamento', icon: Wallet },
                 { value: 'task', label: 'Tarefa', icon: ListTodo },
+                { value: 'weight', label: 'Peso', icon: Scale },
               ]}
             />
             {forcedTransactionWithoutAmount ? (
               <p className="text-sm text-expense">Inclua um valor na frase, ex.: "{text.trim()} 25,00".</p>
+            ) : forcedWeightWithoutValue ? (
+              <p className="text-sm text-expense">{WEIGHT_HINT}</p>
+            ) : guess.kind === 'weight' ? (
+              <p className="text-sm">
+                Pesagem de {relativeDay(guess.date, today).toLowerCase()}: <b className="tabular">{formatKg(guess.kg)}</b>
+                {replaced && <span className="text-ink-3"> (substitui {formatKg(replaced.kg)})</span>}
+              </p>
             ) : guess.kind === 'transaction' ? (
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <Item label={guess.type === 'income' ? 'Receita' : 'Despesa'} value={guess.title} />

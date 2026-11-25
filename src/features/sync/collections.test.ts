@@ -44,6 +44,7 @@ const personal = (p: Partial<PersonalState> = {}): PersonalState => ({
   habits: [],
   workoutPlans: [],
   workoutSessions: [],
+  bodyWeights: [],
   ...p,
 });
 

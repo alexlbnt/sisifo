@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { defaultCategories } from '../src/features/finance/defaultCategories.js';
 import { defaultAreas } from '../src/features/personal/defaultAreas.js';
-import { parseCapture, type CaptureContext } from '../src/shared/capture.js';
+import { looksLikeWeight, parseCapture, type CaptureContext } from '../src/shared/capture.js';
 import { localDate } from '../src/shared/dates.js';
 import { COLLECTION_SCHEMAS, type SyncChange } from '../src/shared/sync.js';
 import { isDatabaseConfigured } from '../server/db.js';
@@ -50,7 +50,10 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   const guess = parseCapture(text, ctx);
-  if (!guess) return reply(request, 'Não entendi. Tente algo como "mercado 152,30" ou "estudar amanhã às 19h".', {}, 400);
+  if (!guess && looksLikeWeight(text)) {
+    return reply(request, 'Não entendi o peso. Escreva assim: "peso 68,4" (de hoje ou de um dia que já passou).', {}, 400);
+  }
+  if (!guess) return reply(request, 'Não entendi. Tente algo como "mercado 152,30", "estudar amanhã às 19h" ou "peso 68,4".', {}, 400);
 
   const now = new Date().toISOString();
   const id = randomUUID();
@@ -73,6 +76,16 @@ export async function POST(request: Request): Promise<Response> {
     };
     const label = ctx.categories.find((c) => c.id === guess.category)?.label ?? guess.category;
     message = `${guess.type === 'income' ? 'Receita' : 'Despesa'} registrada: ${guess.title}, ${money(guess.amountCents)} (${label})`;
+  } else if (guess.kind === 'weight') {
+    // Uma pesagem por dia: o id é a data, e registrar de novo no dia substitui.
+    change = {
+      collection: 'bodyWeights',
+      id: guess.date,
+      updatedAt: now,
+      data: { id: guess.date, date: guess.date, kg: guess.kg, createdAt: now },
+    };
+    const when = guess.date === today ? 'hoje' : guess.date.split('-').reverse().slice(0, 2).join('/');
+    message = `Pesagem registrada: ${guess.kg.toLocaleString('pt-BR')} kg (${when})`;
   } else {
     const area = guess.area ?? ctx.areas.find((a) => !a.archived)?.id ?? 'routine';
     change = {

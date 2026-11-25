@@ -48,7 +48,9 @@ export type GoalMeasure = 'sum' | 'last';
 export type GoalSource =
   | { type: 'exercise'; exercise: string }
   | { type: 'workouts'; kind?: WorkoutKind }
-  | { type: 'habit'; habitId: string };
+  | { type: 'habit'; habitId: string }
+  /** Média de 7 dias das pesagens, com a faixa de ritmo desejada (kg/semana, sempre positiva). */
+  | { type: 'bodyweight'; minPerWeek?: number; maxPerWeek?: number };
 
 export interface Goal {
   id: string;
@@ -254,6 +256,20 @@ export interface WeeklyReview {
   createdAt: string;
 }
 
+/* ───────── Peso ───────── */
+
+/** Uma pesagem. Uma por dia: o id é a própria data, e registrar de novo no dia substitui. */
+export interface BodyWeight {
+  id: ISODate;
+  date: ISODate;
+  /** De 20 a 300, com até 1 casa decimal. */
+  kg: number;
+  note?: string;
+  createdAt: string;
+}
+
+export type BodyWeightInput = Pick<BodyWeight, 'date' | 'kg' | 'note'>;
+
 /* ───────── Estado ───────── */
 
 export interface PersonalState {
@@ -265,4 +281,5 @@ export interface PersonalState {
   habits: Habit[];
   workoutPlans: WorkoutPlan[];
   workoutSessions: WorkoutSession[];
+  bodyWeights: BodyWeight[];
 }

@@ -35,13 +35,14 @@ export function useGoalContext(): GoalContext {
   const accountBalance = useAccountBalanceAt();
   const sessions = usePersonalStore((s) => s.workoutSessions);
   const habits = usePersonalStore((s) => s.habits);
+  const bodyWeights = usePersonalStore((s) => s.bodyWeights);
   const today = todayISO();
   return useMemo(
     () => ({
       today,
       accountBalance,
-      sourceValue: (goal: Goal, upTo: string) => (goal.source ? sourceValue(goal, goal.source, { sessions, habits }, upTo) : null),
+      sourceValue: (goal: Goal, upTo: string) => (goal.source ? sourceValue(goal, goal.source, { sessions, habits, bodyWeights }, upTo) : null),
     }),
-    [today, accountBalance, sessions, habits],
+    [today, accountBalance, sessions, habits, bodyWeights],
   );
 }

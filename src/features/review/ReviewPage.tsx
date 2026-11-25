@@ -1,12 +1,14 @@
 import { useId, useMemo, useState, type FormEvent } from 'react';
-import { CalendarArrowUp, ChevronLeft, ChevronRight, CircleCheck, Dumbbell, Flag, Flame, ListTodo, Sparkles, Target, Wallet } from 'lucide-react';
-import { Button, Card, Field, IconButton, PageHeader, ProgressBar, Textarea } from '@/components/ui';
+import { CalendarArrowUp, ChevronLeft, ChevronRight, CircleCheck, Dumbbell, Flag, Flame, ListTodo, Scale, Sparkles, Target, Wallet } from 'lucide-react';
+import { Badge, Button, Card, Field, IconButton, PageHeader, ProgressBar, Textarea } from '@/components/ui';
 import { expenseCategoryOrder, useCategoryLookup } from '@/features/finance/categories';
 import { useFinanceStore } from '@/features/finance/store';
 import { formatGoalValue, useGoalContext } from '@/features/personal/goals/goalFormat';
 import { StalledTasks } from '@/features/personal/tasks/StalledTasks';
 import { formatLoad } from '@/features/personal/training/progress';
 import { usePersonalStore } from '@/features/personal/store';
+import { formatDelta } from '@/features/personal/weight/format';
+import { PACE_LABELS, PACE_TONES } from '@/features/personal/weight/goal';
 import { cn } from '@/lib/cn';
 import { addDaysISO, fmt, relativeDay, startOfWeekISO, todayISO } from '@/lib/dates';
 import { formatBRL } from '@/lib/money';
@@ -35,6 +37,7 @@ export function ReviewPage() {
         categoryOrder: expenseCategoryOrder(finance.categories),
         goals: personal.goals,
         goalEntries: personal.goalEntries,
+        bodyWeights: personal.bodyWeights,
         goalValue: goalCtx.sourceValue,
       }),
     [week, today, personal, finance, goalCtx],
@@ -124,7 +127,7 @@ export function ReviewPage() {
             </Card>
           )}
 
-          {(summary.goals.length > 0 || summary.records.length > 0 || summary.money.alerts.length > 0) && (
+          {(summary.goals.length > 0 || summary.records.length > 0 || summary.money.alerts.length > 0 || summary.weight) && (
             <Card title="Metas, recordes e orçamento">
               <ul className="flex flex-col gap-2 text-sm">
                 {summary.records.map((r) => (
@@ -146,6 +149,20 @@ export function ReviewPage() {
                     </span>
                   </li>
                 ))}
+                {summary.weight && (
+                  <li className="flex items-center gap-2">
+                    <Scale className="size-4 shrink-0 text-ink-3" aria-hidden />
+                    <span className="flex-1">
+                      Peso na semana
+                      {summary.weight.status && (
+                        <Badge tone={PACE_TONES[summary.weight.status.state]} className="ml-2">
+                          {PACE_LABELS[summary.weight.status.state]}
+                        </Badge>
+                      )}
+                    </span>
+                    <span className="font-medium tabular">{formatDelta(summary.weight.change)}</span>
+                  </li>
+                )}
                 {summary.money.alerts.map((a) => (
                   <li key={a.category} className={cn('flex items-center gap-2', a.level === 'over' ? 'text-expense' : 'text-warn')}>
                     <Wallet className="size-4 shrink-0" aria-hidden />

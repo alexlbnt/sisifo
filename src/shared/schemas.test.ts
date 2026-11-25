@@ -3,7 +3,7 @@ import { createFinanceMock } from '@/features/finance/mock';
 import { createPersonalMock } from '@/features/personal/mock';
 import { toRecords } from '@/features/sync/collections';
 import { COLLECTION_SCHEMAS } from './sync';
-import { taskSchema } from './schemas';
+import { bodyWeightSchema, taskSchema } from './schemas';
 
 const task = { id: 't', title: 'Dentista', area: 'routine', status: 'todo', date: '2026-10-12', createdAt: '2026-10-11T10:00:00Z' };
 
@@ -23,5 +23,13 @@ describe('schemas da sincronização', () => {
       .filter((r) => !r.result.success)
       .map((r) => `${r.key}: ${r.result.error?.issues[0]?.path.join('.')} ${r.result.error?.issues[0]?.message}`);
     expect(invalid).toEqual([]);
+  });
+
+  it('aceita pesagem válida e recusa fora da faixa ou com id diferente da data', () => {
+    const ok = { id: '2026-11-25', date: '2026-11-25', kg: 68.4, createdAt: '2026-11-25T10:00:00.000Z' };
+    expect(bodyWeightSchema.safeParse(ok).success).toBe(true);
+    expect(bodyWeightSchema.safeParse({ ...ok, kg: 19.9 }).success).toBe(false);
+    expect(bodyWeightSchema.safeParse({ ...ok, kg: 300.1 }).success).toBe(false);
+    expect(bodyWeightSchema.safeParse({ ...ok, id: 'x' }).success).toBe(false);
   });
 });

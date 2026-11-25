@@ -10,6 +10,10 @@ import { goalMetrics, type GoalMetrics } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { Goal } from '../types';
 import { formatGoalValue, parseGoalValue, useGoalContext } from './goalFormat';
+import { formatRate } from '../weight/format';
+import { PACE_LABELS, PACE_TONES, paceStatus, plateauMessage } from '../weight/goal';
+import { periodStart } from '../weight/view';
+import { WeightChart } from '../weight/WeightChart';
 import { sourceLabel } from './sources';
 
 interface GoalCardProps {
@@ -199,6 +203,8 @@ function MeasuredBody({ goal, metrics }: { goal: Goal; metrics: GoalMetrics }) {
         </p>
       )}
 
+      {goal.source?.type === 'bodyweight' && <WeightGoalStatus goal={goal} />}
+
       {goal.kind === 'numeric' && goal.source ? (
         <p className="mt-auto flex items-center gap-1.5 pt-4 text-sm text-ink-3">
           <RefreshCw className="size-3.5 shrink-0" aria-hidden />
@@ -254,6 +260,27 @@ function MeasuredBody({ goal, metrics }: { goal: Goal; metrics: GoalMetrics }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** Meta de peso: o estado do ritmo, o aviso de platô e a curva dos últimos 3 meses. */
+function WeightGoalStatus({ goal }: { goal: Goal }) {
+  const weights = usePersonalStore((s) => s.bodyWeights);
+  const today = todayISO();
+  const status = useMemo(() => paceStatus(goal, weights, today), [goal, weights, today]);
+  const plateau = plateauMessage(status);
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <p className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
+        <Badge tone={PACE_TONES[status.state]}>{PACE_LABELS[status.state]}</Badge>
+        <span className="tabular">
+          {status.rate === null ? 'Poucas pesagens para o ritmo' : formatRate(status.rate)} · faixa {status.min.toLocaleString('pt-BR')}–
+          {status.max.toLocaleString('pt-BR')} kg/sem
+        </span>
+      </p>
+      {plateau && <p className="text-xs text-expense">{plateau}</p>}
+      <WeightChart weights={weights} from={periodStart('3m', today)} target={goal.target} compact />
     </div>
   );
 }

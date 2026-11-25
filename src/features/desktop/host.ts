@@ -1,5 +1,5 @@
 import { applyCapture, captureContext } from '@/features/capture/apply';
-import { parseCapture } from '@/features/capture/parse';
+import { looksLikeWeight, parseCapture, WEIGHT_HINT } from '@/features/capture/parse';
 import { pendingToday } from '@/features/personal/selectors';
 import { usePersonalStore } from '@/features/personal/store';
 import { syncNow } from '@/features/sync/engine';
@@ -44,10 +44,11 @@ export function createHostHandlers(deps: { today?: () => ISODate } = {}) {
     if (!text) return { ok: false, message: 'Nada para registrar.' };
     const day = today();
     const guess = parseCapture(text, captureContext(day), cmd.force);
-    if (!guess) return { ok: false, message: 'Nada para registrar.' };
+    if (!guess) return { ok: false, message: looksLikeWeight(text) ? WEIGHT_HINT : 'Nada para registrar.' };
     if (cmd.force === 'transaction' && guess.kind === 'task') {
       return { ok: false, message: `Inclua um valor na frase, ex.: "${text} 25,00".` };
     }
+    if (cmd.force === 'weight' && guess.kind !== 'weight') return { ok: false, message: WEIGHT_HINT };
     return { ok: true, message: applyCapture(guess, { today: day }) };
   }
 

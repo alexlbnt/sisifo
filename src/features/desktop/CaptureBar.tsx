@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CircleCheck, ListTodo, Wallet, Zap } from 'lucide-react';
+import { CircleCheck, ListTodo, Scale, Wallet, Zap } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { relativeDay, todayISO } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { formatBRL } from '@/lib/money';
-import type { CaptureGuess } from '@/shared/capture';
+import { WEIGHT_HINT, type CaptureGuess } from '@/shared/capture';
+import { formatKg } from '@/features/personal/weight/format';
 import type { TaskPriority } from '@/features/personal/types';
 import { BridgeTimeout, createBridgeClient, WINDOW_FOCUSED, type Transport } from './bridge';
 import { native } from './native';
@@ -173,6 +174,7 @@ export function CaptureBar() {
                   [
                     { value: 'transaction', label: 'Lançamento', icon: Wallet },
                     { value: 'task', label: 'Tarefa', icon: ListTodo },
+                    { value: 'weight', label: 'Peso', icon: Scale },
                   ] as const
                 ).map(({ value, label, icon: Icon }) => (
                   <button
@@ -193,6 +195,12 @@ export function CaptureBar() {
               <p className="min-w-0 truncate text-ink-2">
                 {force === 'transaction' && guess.kind === 'task' ? (
                   <span className="text-expense">Inclua um valor na frase, ex.: "{text.trim()} 25,00".</span>
+                ) : force === 'weight' && guess.kind !== 'weight' ? (
+                  <span className="text-expense">{WEIGHT_HINT}</span>
+                ) : guess.kind === 'weight' ? (
+                  <>
+                    Pesagem de {relativeDay(guess.date, today).toLowerCase()}: <b className="text-ink">{formatKg(guess.kg)}</b>
+                  </>
                 ) : guess.kind === 'transaction' ? (
                   <>
                     <b className="text-ink">{guess.title}</b> ·{' '}

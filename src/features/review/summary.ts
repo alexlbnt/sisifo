@@ -9,7 +9,10 @@ import {
   weekCount,
 } from '@/features/personal/selectors';
 import { exerciseKey, formatLoad } from '@/features/personal/training/progress';
-import type { Goal, GoalEntry, Habit, Task, WeeklyReview, WorkoutPlan, WorkoutSession } from '@/features/personal/types';
+import type { BodyWeight, Goal, GoalEntry, Habit, Task, WeeklyReview, WorkoutPlan, WorkoutSession } from '@/features/personal/types';
+import { formatDelta } from '@/features/personal/weight/format';
+import { activeWeightGoal, PACE_LABELS, paceStatus, type WeightStatus } from '@/features/personal/weight/goal';
+import { trendAt, weeklyRate } from '@/features/personal/weight/trend';
 import { addDaysISO, monthKeyOf, startOfWeekISO, weekDaysFrom, weekdayOf, type ISODate } from '@/lib/dates';
 
 export interface HabitWeek {
@@ -30,6 +33,8 @@ export interface WeekSummary {
   records: Array<{ name: string; load: number; reps: number }>;
   /** Tarefas abertas que vêm sendo adiadas. */
   stalled: Task[];
+  /** Média de 7 dias no domingo menos a do domingo anterior; null sem pesagem até o fim da semana. */
+  weight: { change: number; rate: number | null; status: WeightStatus | null } | null;
 }
 
 export interface SummaryInput {
@@ -44,6 +49,7 @@ export interface SummaryInput {
   goalEntries: GoalEntry[];
   /** Valor de metas automáticas (treino, hábito) numa data; sem isto, só valem os registros. */
   goalValue?: (goal: Goal, upTo: ISODate) => number | null;
+  bodyWeights?: BodyWeight[];
 }
 
 /**
@@ -153,6 +159,22 @@ export function weekSummary(start: ISODate, today: ISODate, input: SummaryInput)
     goals,
     records,
     stalled: stalledTasks(input.tasks),
+    weight: weightWeek(input, start, end, today),
+  };
+}
+
+/** Peso na semana: a variação da média de 7 dias, o ritmo e, com meta de peso, o estado. */
+function weightWeek(input: SummaryInput, start: ISODate, end: ISODate, today: ISODate): WeekSummary['weight'] {
+  const weights = input.bodyWeights ?? [];
+  const upTo = end < today ? end : today;
+  const now = trendAt(weights, upTo);
+  if (now === null) return null;
+  const before = trendAt(weights, addDaysISO(start, -1));
+  const goal = activeWeightGoal(input.goals);
+  return {
+    change: before === null ? 0 : now - before,
+    rate: weeklyRate(weights, upTo),
+    status: goal ? paceStatus(goal, weights, upTo) : null,
   };
 }
 
@@ -174,7 +196,19 @@ export function weekHighlights(summary: WeekSummary, goalTitle: (goal: Goal, del
     lines.push(`${Math.round((habits.done / habits.expected) * 100)}% dos hábitos cumpridos.`);
   }
   if (tasks.total > 0 && tasks.done / tasks.total >= 0.6) lines.push(`${tasks.done} de ${tasks.total} tarefas concluídas.`);
-  for (const { goal, delta } of summary.goals) if (delta > 0) lines.push(goalTitle(goal, delta));
+  // A meta de peso já aparece na linha de peso, com o sentido certo (ganho ou perda).
+  for (const { goal, delta } of summary.goals) {
+    if (delta > 0 && goal.source?.type !== 'bodyweight') lines.push(goalTitle(goal, delta));
+  }
+  const weight = summary.weight;
+  if (weight) {
+    const { status } = weight;
+    if (status?.state === 'stalled') lines.push(`Peso parado há ${status.stalledWeeks} semanas.`);
+    else {
+      const state = status && status.state !== 'noData' ? `, ${PACE_LABELS[status.state].toLowerCase()}` : '';
+      lines.push(`Peso: ${formatDelta(weight.change)} na semana${state}.`);
+    }
+  }
   return lines;
 }
 
