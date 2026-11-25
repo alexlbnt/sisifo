@@ -1,7 +1,8 @@
 import type { ISODate } from '@/lib/dates';
 import { WORKOUT_KINDS } from '../meta';
 import { exerciseKey } from '../training/progress';
-import type { Goal, GoalSource, Habit, WorkoutSession } from '../types';
+import type { BodyWeight, Goal, GoalSource, Habit, WorkoutSession } from '../types';
+import { trendAt } from '../weight/trend';
 
 /**
  * Metas que se atualizam sozinhas: o valor vem do treino ou dos hábitos, sem
@@ -11,6 +12,7 @@ import type { Goal, GoalSource, Habit, WorkoutSession } from '../types';
 export interface SourceData {
   sessions: WorkoutSession[];
   habits: Habit[];
+  bodyWeights: BodyWeight[];
 }
 
 /** Dia em que a meta começou a contar (contagens de treinos e hábitos partem daqui). */
@@ -51,6 +53,11 @@ export function sourceValue(goal: Goal, source: GoalSource, data: SourceData, up
       }
       return start + habit.completions.filter(inRange).length;
     }
+    case 'bodyweight':
+      return trendAt(data.bodyWeights, upTo) ?? start;
+    default:
+      // Fonte de uma versão mais nova do app: sem ela, vale o início.
+      return start;
   }
 }
 
@@ -58,6 +65,7 @@ export function sourceValue(goal: Goal, source: GoalSource, data: SourceData, up
 export function sourceUnit(source: GoalSource, habits: Habit[]): string {
   if (source.type === 'exercise') return 'kg';
   if (source.type === 'workouts') return 'treinos';
+  if (source.type === 'bodyweight') return 'kg';
   return habits.find((h) => h.id === source.habitId)?.unit || 'dias';
 }
 
@@ -65,6 +73,7 @@ export function sourceUnit(source: GoalSource, habits: Habit[]): string {
 export function sourceLabel(source: GoalSource, habits: Habit[]): string {
   if (source.type === 'exercise') return `Recorde de carga em ${source.exercise}`;
   if (source.type === 'workouts') return source.kind ? `Treinos de ${WORKOUT_KINDS[source.kind]} registrados` : 'Treinos registrados';
+  if (source.type === 'bodyweight') return 'Peso corporal (média de 7 dias)';
   const habit = habits.find((h) => h.id === source.habitId);
-  return habit ? `Hábito "${habit.title}"` : 'Hábito removido';
+  return habit ?`Hábito "${habit.title}"` : 'Hábito removido';
 }

@@ -134,6 +134,11 @@ export const goalSchema = z.object({
       z.object({ type: z.literal('exercise'), exercise: text(120) }),
       z.object({ type: z.literal('workouts'), kind: workoutKind.optional() }),
       z.object({ type: z.literal('habit'), habitId: id }),
+      z.object({
+        type: z.literal('bodyweight'),
+        minPerWeek: z.number().min(0).max(5).optional(),
+        maxPerWeek: z.number().min(0).max(5).optional(),
+      }),
     ])
     .optional(),
   createdAt: timestamp,

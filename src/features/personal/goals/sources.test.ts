@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { goalMetrics } from '../selectors';
-import type { Goal, Habit, WorkoutSession } from '../types';
+import type { BodyWeight, Goal, GoalSource, Habit, WorkoutSession } from '../types';
 import { sourceValue } from './sources';
 
 const session = (date: string, kind: WorkoutSession['kind'], load?: number): WorkoutSession => ({
@@ -43,7 +43,7 @@ const habit: Habit = {
 };
 const water: Habit = { ...habit, id: 'w', kind: 'quantity', target: 8, amounts: { '2026-09-30': 8, '2026-10-02': 5, '2026-10-03': 8 } };
 
-const data = { sessions, habits: [habit, water] };
+const data = { sessions, habits: [habit, water], bodyWeights: [] };
 
 describe('metas que se atualizam sozinhas', () => {
   it('recorde de carga de um exercício, até a data', () => {
@@ -77,5 +77,18 @@ describe('metas que se atualizam sozinhas', () => {
     });
     expect(metrics.current).toBe(75);
     expect(metrics.progress).toBeCloseTo(0.75);
+  });
+
+  it('peso corporal: média de 7 dias, e o start sem pesagem', () => {
+    const g = goal({ start: 65, target: 72, source: { type: 'bodyweight' } });
+    const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
+    expect(sourceValue(g, g.source!, data, '2026-11-25')).toBe(65);
+    const withWeights = { ...data, bodyWeights: [w('2026-11-24', 68), w('2026-11-25', 69)] };
+    expect(sourceValue(g, g.source!, withWeights, '2026-11-25')).toBe(68.5);
+  });
+
+  it('fonte desconhecida (de uma versão mais nova) devolve o start em vez de NaN', () => {
+    const g = goal({ start: 10, source: { type: 'futuro' } as unknown as GoalSource });
+    expect(sourceValue(g, g.source!, data, '2026-11-25')).toBe(10);
   });
 });

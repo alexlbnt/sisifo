@@ -48,7 +48,9 @@ export type GoalMeasure = 'sum' | 'last';
 export type GoalSource =
   | { type: 'exercise'; exercise: string }
   | { type: 'workouts'; kind?: WorkoutKind }
-  | { type: 'habit'; habitId: string };
+  | { type: 'habit'; habitId: string }
+  /** Média de 7 dias das pesagens, com a faixa de ritmo desejada (kg/semana, sempre positiva). */
+  | { type: 'bodyweight'; minPerWeek?: number; maxPerWeek?: number };
 
 export interface Goal {
   id: string;
