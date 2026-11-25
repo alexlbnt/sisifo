@@ -1,2 +1,3 @@
-# A casca do executável (Tauri) não faz parte do site.
-desktop/
+# A casca do executável (Tauri) não faz parte do site. A barra inicial ancora na raiz:
+# sem ela, "desktop/" também tiraria src/features/desktop/ do build.
+/desktop/
