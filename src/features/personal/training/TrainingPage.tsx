@@ -61,6 +61,13 @@ export function TrainingPage() {
     [sessions],
   );
   const isCurrentWeek = startOfWeekISO(weekOf) === startOfWeekISO(today);
+  const last30 = [...trainedDays].filter((d) => d > addDaysISO(today, -30) && d <= today).length;
+  const statsLine = [
+    stats.plannedThisWeek ? `${stats.sessionsThisWeek} de ${stats.plannedThisWeek} previstos` : `${stats.sessionsThisWeek} ${stats.sessionsThisWeek === 1 ? 'treino' : 'treinos'}`,
+    `${stats.minutesThisWeek} min`,
+    `${stats.activeWeeksStreak} ${stats.activeWeeksStreak === 1 ? 'semana seguida' : 'semanas seguidas'}`,
+    `${last30} ${last30 === 1 ? 'dia' : 'dias'} em 30`,
+  ].join(' · ');
 
   return (
     <>
@@ -81,31 +88,10 @@ export function TrainingPage() {
 
       <ActiveWorkoutBanner className="mb-4" />
 
-      <WeightCard className="mb-4" onDefineTarget={() => setWeightGoalForm(true)} />
-      <GoalForm open={weightGoalForm} preset="bodyweight" onClose={() => setWeightGoalForm(false)} />
-
-      <section
-        aria-label="Resumo da semana"
-        className="mb-4 grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-surface lg:grid-cols-4"
-      >
-        <Stat
-          label="Treinos na semana"
-          value={`${stats.sessionsThisWeek}`}
-          suffix={stats.plannedThisWeek ? `de ${stats.plannedThisWeek} previstos` : undefined}
-        />
-        <Stat label="Minutos na semana" value={`${stats.minutesThisWeek}`} suffix="min" />
-        <Stat label="Semanas seguidas" value={`${stats.activeWeeksStreak}`} suffix="com treino" />
-        <Stat
-          label="Últimos 30 dias"
-          value={`${[...trainedDays].filter((d) => d > addDaysISO(today, -30) && d <= today).length}`}
-          suffix="dias treinados"
-          last
-        />
-      </section>
-
       <Card
         className="mb-4"
         title={isCurrentWeek ? 'Esta semana' : `Semana de ${fmt.short(startOfWeekISO(weekOf))}`}
+        description={statsLine}
         action={
           <div className="flex items-center">
             {!isCurrentWeek && (
@@ -124,7 +110,7 @@ export function TrainingPage() {
           </div>
         }
       >
-        <ol className="grid gap-2 sm:grid-cols-7">
+        <ol className="grid gap-1.5 sm:grid-cols-7 sm:gap-2">
           {week.map((day) => {
             const isToday = day.date === today;
             const future = day.date > today;
@@ -133,11 +119,11 @@ export function TrainingPage() {
               <li
                 key={day.date}
                 className={cn(
-                  'flex min-h-28 flex-col gap-1.5 rounded-xl border p-2.5',
+                  'flex flex-wrap items-center gap-1.5 rounded-xl border px-2.5 py-2 sm:min-h-28 sm:flex-col sm:flex-nowrap sm:items-stretch sm:py-2.5',
                   isToday ? 'border-accent bg-accent-soft/40' : 'border-line',
                 )}
               >
-                <p className="flex items-baseline justify-between text-xs">
+                <p className="flex w-14 shrink-0 items-baseline gap-1 text-xs sm:w-auto sm:justify-between">
                   <span className={cn('font-semibold', isToday ? 'text-accent' : 'text-ink-2')}>
                     {fmt.weekdayShort(day.date)}
                   </span>
@@ -148,7 +134,7 @@ export function TrainingPage() {
                     key={s.id}
                     type="button"
                     onClick={() => setSessionForm({ session: s })}
-                    className="flex items-start gap-1 rounded-md bg-accent px-1.5 py-1 text-left text-xs text-accent-ink"
+                    className="flex items-start gap-1 rounded-md bg-accent px-2 py-1.5 text-left text-xs text-accent-ink sm:px-1.5 sm:py-1"
                   >
                     <Check className="mt-px size-3 shrink-0" strokeWidth={3} aria-hidden />
                     <span className="line-clamp-2">{s.label}</span>
@@ -162,7 +148,7 @@ export function TrainingPage() {
                     onClick={() => setSessionForm({ plan: p, date: day.date })}
                     title={future ? 'Previsto' : 'Registrar este treino'}
                     className={cn(
-                      'rounded-md border border-dashed px-1.5 py-1 text-left text-xs',
+                      'rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:px-1.5 sm:py-1',
                       future
                         ? 'border-line text-ink-3'
                         : 'border-ink-3/50 text-ink-2 hover:border-accent hover:text-accent',
@@ -183,21 +169,12 @@ export function TrainingPage() {
         </p>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
-          <Card title="Dias treinados" description="Semanas mais recentes">
-            <div>
-              <Heatmap
-                fit
-                weeks={52}
-                label="Dias com treino nas últimas semanas"
-                state={(d) => (trainedDays.has(d) ? 'done' : 'missed')}
-                describe={(d, s) => `${fmt.short(d)}: ${s === 'done' ? 'treinou' : 'sem treino'}`}
-              />
-            </div>
-          </Card>
-
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-5 lg:items-start">
+        {/* No celular as colunas somem (contents) e a ordem vem do uso: peso, evolução, divisão, histórico, dias. */}
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4 lg:col-span-2">
+          <WeightCard className="order-1 lg:order-none" onDefineTarget={() => setWeightGoalForm(true)} />
           <Card
+            className="order-3 lg:order-none"
             title="Divisão de treino"
             flush
             action={
@@ -236,11 +213,24 @@ export function TrainingPage() {
               </ul>
             )}
           </Card>
+          <Card className="order-5 lg:order-none" title="Dias treinados" description="Semanas mais recentes">
+            <div>
+              <Heatmap
+                fit
+                weeks={52}
+                label="Dias com treino nas últimas semanas"
+                state={(d) => (trainedDays.has(d) ? 'done' : 'missed')}
+                describe={(d, s) => `${fmt.short(d)}: ${s === 'done' ? 'treinou' : 'sem treino'}`}
+              />
+            </div>
+          </Card>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-3">
-          <ProgressCard />
-          <Card title="Histórico" flush>
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4 lg:col-span-3">
+          <div className="order-2 min-w-0 lg:order-none">
+            <ProgressCard />
+          </div>
+          <Card className="order-4 lg:order-none" title="Histórico" flush>
             {history.length === 0 ? (
               <EmptyState icon={Dumbbell} title="Nenhum treino registrado" />
             ) : (
@@ -275,6 +265,7 @@ export function TrainingPage() {
         </div>
       </div>
 
+      <GoalForm open={weightGoalForm} preset="bodyweight" onClose={() => setWeightGoalForm(false)} />
       <StartWorkoutDialog open={choosing} onClose={() => setChoosing(false)} />
       {startDialog}
       <SessionForm
@@ -304,14 +295,3 @@ export function TrainingPage() {
   );
 }
 
-function Stat({ label, value, suffix, last }: { label: string; value: string; suffix?: string; last?: boolean }) {
-  return (
-    <div className={cn('border-line px-5 py-4 [&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0', !last && 'odd:border-r lg:border-r')}>
-      <p className="text-[13px] text-ink-2">{label}</p>
-      <p className="mt-0.5 flex items-baseline gap-1.5">
-        <span className="font-display text-2xl font-semibold tabular">{value}</span>
-        {suffix && <span className="text-xs text-ink-3">{suffix}</span>}
-      </p>
-    </div>
-  );
-}
