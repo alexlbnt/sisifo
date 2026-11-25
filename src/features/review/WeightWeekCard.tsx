@@ -2,7 +2,7 @@ import { Scale, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { usePersonalStore } from '@/features/personal/store';
 import { formatDelta, formatKg, formatRate } from '@/features/personal/weight/format';
-import { activeWeightGoal, PACE_LABELS, PACE_TONES, plateauMessage } from '@/features/personal/weight/goal';
+import { PACE_LABELS, PACE_TONES, plateauMessage } from '@/features/personal/weight/goal';
 import { trendAt } from '@/features/personal/weight/trend';
 import { WeightChart } from '@/features/personal/weight/WeightChart';
 import { addDaysISO, type ISODate } from '@/lib/dates';
@@ -11,8 +11,6 @@ import type { WeekSummary } from './summary';
 /** Peso na semana revista: a variação, o estado da meta e as 8 semanas até o domingo. */
 export function WeightWeekCard({ weight, end }: { weight: NonNullable<WeekSummary['weight']>; end: ISODate }) {
   const weights = usePersonalStore((s) => s.bodyWeights);
-  const goals = usePersonalStore((s) => s.goals);
-  const goal = activeWeightGoal(goals);
   const { status } = weight;
   const plateau = status ? plateauMessage(status) : null;
   const avg = trendAt(weights, end);
@@ -36,7 +34,7 @@ export function WeightWeekCard({ weight, end }: { weight: NonNullable<WeekSummar
         {details && <span className="text-sm text-ink-3 tabular">{details}</span>}
       </p>
       <div className="mt-2">
-        <WeightChart weights={weights} from={addDaysISO(end, -55)} to={end} target={goal?.target} compact />
+        <WeightChart weights={weights} from={addDaysISO(end, -55)} to={end} compact />
       </div>
       {plateau && (
         <p role="status" className="mt-2 flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] text-expense">

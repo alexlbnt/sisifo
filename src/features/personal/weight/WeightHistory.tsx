@@ -93,6 +93,7 @@ export function WeightHistory({ open, onClose, onDefineTarget }: WeightHistoryPr
 
           <div>
             <h3 className="mb-1 text-[13px] font-medium text-ink-2">Pesagens</h3>
+            {history.length === 0 && <p className="py-2 text-sm text-ink-3">Nenhuma pesagem registrada.</p>}
             <ul className="divide-y divide-line">
               {(showAll ? history : history.slice(0, HISTORY)).map((w) => (
                 <li key={w.id} className="flex items-center gap-2 py-1.5 text-sm">

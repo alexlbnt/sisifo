@@ -23,6 +23,7 @@ import { PlanForm } from './PlanForm';
 import { ProgressCard } from './ProgressCard';
 import { useRunStore } from './runStore';
 import { SessionForm } from './SessionForm';
+import { weekStatsLine } from './statsLine';
 import { ActiveWorkoutBanner, StartWorkoutDialog, useStartWorkout } from './StartWorkout';
 
 /** "5 exercícios, 18 séries" para a linha do histórico. */
@@ -62,12 +63,7 @@ export function TrainingPage() {
   );
   const isCurrentWeek = startOfWeekISO(weekOf) === startOfWeekISO(today);
   const last30 = [...trainedDays].filter((d) => d > addDaysISO(today, -30) && d <= today).length;
-  const statsLine = [
-    stats.plannedThisWeek ? `${stats.sessionsThisWeek} de ${stats.plannedThisWeek} previstos` : `${stats.sessionsThisWeek} ${stats.sessionsThisWeek === 1 ? 'treino' : 'treinos'}`,
-    `${stats.minutesThisWeek} min`,
-    `${stats.activeWeeksStreak} ${stats.activeWeeksStreak === 1 ? 'semana seguida' : 'semanas seguidas'}`,
-    `${last30} ${last30 === 1 ? 'dia' : 'dias'} em 30`,
-  ].join(' · ');
+  const statsLine = weekStatsLine(week, isCurrentWeek ? { streak: stats.activeWeeksStreak, last30 } : null);
 
   return (
     <>
@@ -119,16 +115,18 @@ export function TrainingPage() {
               <li
                 key={day.date}
                 className={cn(
-                  'flex flex-wrap items-center gap-1.5 rounded-xl border px-2.5 py-2 sm:min-h-28 sm:flex-col sm:flex-nowrap sm:items-stretch sm:py-2.5',
+                  'flex items-start gap-1.5 rounded-xl border px-2.5 py-2 sm:min-h-28 sm:flex-col sm:items-stretch sm:py-2.5',
                   isToday ? 'border-accent bg-accent-soft/40' : 'border-line',
                 )}
               >
-                <p className="flex w-14 shrink-0 items-baseline gap-1 text-xs sm:w-auto sm:justify-between">
+                <p className="flex w-14 shrink-0 items-baseline gap-1 pt-1.5 text-xs sm:w-auto sm:justify-between sm:pt-0">
                   <span className={cn('font-semibold', isToday ? 'text-accent' : 'text-ink-2')}>
                     {fmt.weekdayShort(day.date)}
                   </span>
                   <span className="text-ink-3 tabular">{day.date.slice(8, 10)}</span>
                 </p>
+                {/* No celular os treinos ficam numa coluna ao lado do dia; no desktop, embaixo dele. */}
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:contents">
                 {day.sessions.map((s) => (
                   <button
                     key={s.id}
@@ -158,8 +156,9 @@ export function TrainingPage() {
                   </button>
                 ))}
                 {!day.sessions.length && !pending.length && (
-                  <span className="text-xs text-ink-3">Descanso</span>
+                  <span className="py-1.5 text-xs text-ink-3 sm:py-0">Descanso</span>
                 )}
+                </div>
               </li>
             );
           })}
