@@ -2,6 +2,12 @@
 
 **Data:** 2026-11-24 · **Status:** rascunho para aprovação · **Base:** v1.12.0
 
+## Riscos verificados (2026-11-24)
+
+- **Risco 1, comandos nativos só para o domínio do Sísifo:** ok no modo de desenvolvimento (Vite local). `set_tray_pending` funcionou na origem permitida e falhou em `https://example.com`.
+- **Risco 2, janela principal viva escondida na bandeja** e **risco 3, abrir sem internet:** dependem do instalador com o site publicado. Ficam para depois do deploy desta branch.
+- Também conferidos à mão por Alexandre: bandeja com o número, captura global, esconder ao fechar, cartão Desktop (com a recusa do AltGr e a troca de atalho) e app ⇄ painel.
+
 ## Intenção
 
 O Sísifo já roda como site, como PWA no celular e como Modo Painel num celular fixo na mesa. Alexandre quer também um **executável para o computador** (Windows 11), para ter o que um app instalado faz e o navegador não deixa: atalhos que funcionam com o app em segundo plano, janelinhas em cantos e bordas da tela, ícone na bandeja e lembretes na hora certa.
