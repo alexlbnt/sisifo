@@ -5,34 +5,33 @@ import { ChartTooltipBox } from '@/features/finance/charts/ChartTooltip';
 import { useChartPalette } from '@/features/finance/charts/palette';
 import type { BodyWeight } from '../types';
 import { formatKg } from './format';
-import { trendSeries } from './trend';
+import { chartPoints, type ChartPoint } from './view';
 
 interface WeightChartProps {
   weights: BodyWeight[];
   /** Primeiro dia mostrado; null mostra tudo. */
   from: ISODate | null;
+  /** Último dia mostrado; sem ele, vai até a última pesagem. */
+  to?: ISODate | null;
   /** Peso-alvo da meta, em linha tracejada. */
   target?: number;
   /** Versão pequena, para o card da meta: sem eixos, legenda nem tabela. */
   compact?: boolean;
 }
 
-type Point = { date: ISODate; kg: number; avg: number };
+type Point = ChartPoint;
 
 /**
  * Pesagens (pontos discretos) e a média de 7 dias (a linha em destaque).
  * O destaque é sempre a média: uma pesagem alta depois do jantar não é regressão.
  */
-export function WeightChart({ weights, from, target, compact }: WeightChartProps) {
+export function WeightChart({ weights, from, to, target, compact }: WeightChartProps) {
   const palette = useChartPalette();
   const main = palette.slots[0] ?? palette.income;
   const dots = palette.axis;
   const goal = palette.slots[2] ?? palette.income;
 
-  const data = useMemo<Point[]>(() => {
-    const series = trendSeries(weights).map((p) => ({ ...p, avg: Math.round(p.avg * 10) / 10 }));
-    return from ? series.filter((p) => p.date >= from) : series;
-  }, [weights, from]);
+  const data = useMemo<Point[]>(() => chartPoints(weights, from, to), [weights, from, to]);
 
   if (data.length === 0) return null;
 
@@ -40,7 +39,8 @@ export function WeightChart({ weights, from, target, compact }: WeightChartProps
   const values = data.flatMap((p) => [p.kg, p.avg]);
   let lo = Math.min(...values);
   let hi = Math.max(...values);
-  const showTarget = target !== undefined && target >= lo - 5 && target <= hi + 5;
+  // No minigráfico o alvo achataria a curva; ele já aparece no texto do card.
+  const showTarget = !compact && target !== undefined && target >= lo - 5 && target <= hi + 5;
   if (showTarget) {
     lo = Math.min(lo, target);
     hi = Math.max(hi, target);
@@ -67,7 +67,7 @@ export function WeightChart({ weights, from, target, compact }: WeightChartProps
           )}
         </div>
       )}
-      <div className={compact ? 'h-16' : 'h-56'} role="img" aria-label="Evolução do peso: pesagens e média de 7 dias">
+      <div className={compact ? 'h-20' : 'h-56'} role="img" aria-label="Evolução do peso: pesagens e média de 7 dias">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={compact ? { top: 4, right: 4, left: 4, bottom: 4 } : { top: 6, right: 8, left: 0, bottom: 0 }}>
             {!compact && <CartesianGrid vertical={false} stroke={palette.grid} />}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BodyWeight } from '../types';
-import { latestWeight, periodChange, periodStart, weightReplaced } from './view';
+import { chartPoints, latestWeight, periodChange, periodStart, weightReplaced } from './view';
 
 const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
 const TODAY = '2026-11-25';
@@ -25,6 +25,17 @@ describe('período do gráfico', () => {
   it('latestWeight devolve a pesagem mais recente', () => {
     expect(latestWeight([w('2026-11-20', 68), w('2026-11-24', 69), w('2026-11-01', 70)])?.date).toBe('2026-11-24');
     expect(latestWeight([])).toBeNull();
+  });
+});
+
+describe('chartPoints', () => {
+  const ws = [w('2026-11-10', 60), w('2026-11-15', 62), w('2026-11-20', 64)];
+  it('recorta por from e to, com a média calculada sobre todas as pesagens', () => {
+    const cut = chartPoints(ws, '2026-11-12', '2026-11-18');
+    expect(cut.map((p) => p.date)).toEqual(['2026-11-15']);
+    expect(cut[0]!.avg).toBe(61);
+    expect(chartPoints(ws, '2026-11-12').map((p) => p.date)).toEqual(['2026-11-15', '2026-11-20']);
+    expect(chartPoints(ws, null, null)).toHaveLength(3);
   });
 });
 

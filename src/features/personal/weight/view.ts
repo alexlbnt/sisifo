@@ -1,6 +1,18 @@
 import { addMonthsISO, type ISODate } from '@/lib/dates';
 import type { BodyWeight } from '../types';
-import { trendAt } from './trend';
+import { trendAt, trendSeries } from './trend';
+
+export type ChartPoint = { date: ISODate; kg: number; avg: number };
+
+/**
+ * Pontos do gráfico entre `from` e `to` (null = sem limite). A média de 7 dias
+ * é calculada sobre todas as pesagens, para o começo do recorte não sair torto.
+ */
+export function chartPoints(weights: BodyWeight[], from: ISODate | null, to?: ISODate | null): ChartPoint[] {
+  return trendSeries(weights)
+    .filter((p) => (!from || p.date >= from) && (!to || p.date <= to))
+    .map((p) => ({ ...p, avg: Math.round(p.avg * 10) / 10 }));
+}
 
 export type WeightPeriod = '1m' | '3m' | '6m' | 'all';
 

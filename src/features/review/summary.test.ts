@@ -126,6 +126,11 @@ describe('peso na revisão', () => {
     expect(lines.some((l) => l.startsWith('META'))).toBe(false);
   });
 
+  it('a meta de peso fica fora da lista de metas (o card de peso já mostra)', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising, goals: [weightGoal], goalValue: (_g, upTo) => (upTo >= MONDAY ? 70.4 : 70) }));
+    expect(s.goals).toEqual([]);
+  });
+
   it('sem meta, o destaque só traz a variação', () => {
     const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising }));
     expect(weekHighlights(s, () => '')).toContain('Peso: +0,4 kg na semana.');

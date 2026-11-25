@@ -133,7 +133,7 @@ As pesagens ficam na store pessoal (`bodyWeights`), **uma por dia**: o id é a p
 - **Ritmo:** regressão linear das pesagens dos últimos 28 dias, em kg/semana (pelo menos 4 pesagens cobrindo 14 dias).
 - **Platô:** a média de hoje menos a de 14 dias atrás andou menos de 0,1 kg na direção da meta (com 4+ pesagens no período). As semanas parado contam recuando a janela uma semana por vez.
 - **Meta de peso:** fonte `bodyweight` em `GoalSource`, com faixa de ritmo opcional (`minPerWeek`, `maxPerWeek`; padrão 0,25–0,5 no ganho e 0,25–0,75 na perda). O card de peso usa a meta de peso criada por último. Estados, na ordem: alvo atingido, sem dados, recuando, parado, rápido demais, devagar, dentro da faixa.
-- **Onde aparece:** card Peso na página Treino, linha no card Treino do Hoje, card da meta, captura rápida (`peso 68,4`, também no desktop e em `POST /api/capture`) e revisão semanal.
+- **Onde aparece:** card Peso compacto na página Treino (média, ritmo e minigráfico; o gráfico completo e a lista de pesagens ficam na janela "Histórico de peso"), linha no card Treino do Hoje, card da meta, captura rápida (`peso 68,4`, também no desktop e em `POST /api/capture`) e card "Peso na semana" na revisão semanal.
 
 Código em `src/features/personal/weight/` (cálculos em `trend.ts`, `goal.ts` e `view.ts`, com testes). Design e plano em `docs/superpowers/specs/2026-11-25-peso-design.md` e `docs/superpowers/plans/2026-11-25-peso.md`.
 

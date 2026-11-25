@@ -107,7 +107,9 @@ export function weekSummary(start: ISODate, today: ISODate, input: SummaryInput)
   );
 
   const lastDay = end < today ? end : today;
+  // A meta de peso tem card próprio na revisão; aqui ela só repetiria.
   const goals = input.goals
+    .filter((goal) => goal.source?.type !== 'bodyweight')
     .map((goal) => {
       const after = goal.source && input.goalValue?.(goal, lastDay);
       const before = goal.source && input.goalValue?.(goal, addDaysISO(start, -1));
@@ -196,10 +198,7 @@ export function weekHighlights(summary: WeekSummary, goalTitle: (goal: Goal, del
     lines.push(`${Math.round((habits.done / habits.expected) * 100)}% dos hábitos cumpridos.`);
   }
   if (tasks.total > 0 && tasks.done / tasks.total >= 0.6) lines.push(`${tasks.done} de ${tasks.total} tarefas concluídas.`);
-  // A meta de peso já aparece na linha de peso, com o sentido certo (ganho ou perda).
-  for (const { goal, delta } of summary.goals) {
-    if (delta > 0 && goal.source?.type !== 'bodyweight') lines.push(goalTitle(goal, delta));
-  }
+  for (const { goal, delta } of summary.goals) if (delta > 0) lines.push(goalTitle(goal, delta));
   const weight = summary.weight;
   if (weight) {
     const { status } = weight;
