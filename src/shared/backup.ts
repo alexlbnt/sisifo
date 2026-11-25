@@ -18,6 +18,7 @@ import {
   weeklyReviewSchema,
   workoutPlanSchema,
   workoutSessionSchema,
+  bodyWeightSchema,
 } from './schemas.js';
 import type { CollectionName } from './sync.js';
 
@@ -42,6 +43,7 @@ const personalSchema = z.object({
   habits: z.array(habitSchema),
   workoutPlans: z.array(workoutPlanSchema),
   workoutSessions: z.array(workoutSessionSchema),
+  bodyWeights: z.array(bodyWeightSchema).optional(),
 });
 
 export const backupSchema = z.object({

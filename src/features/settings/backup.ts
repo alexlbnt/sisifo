@@ -95,6 +95,7 @@ export function clearAllData() {
     habits: [],
     workoutPlans: [],
     workoutSessions: [],
+    bodyWeights: [],
   };
   useFinanceStore.getState().replaceAll(emptyFinance);
   usePersonalStore.getState().replaceAll(emptyPersonal);

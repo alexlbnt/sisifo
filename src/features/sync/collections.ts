@@ -36,6 +36,7 @@ const PERSONAL_SLICES: Record<keyof PersonalState, readonly CollectionName[]> = 
   habits: ['habits', 'habitLogs'],
   workoutPlans: ['workoutPlans'],
   workoutSessions: ['workoutSessions'],
+  bodyWeights: ['bodyWeights'],
 };
 
 /** Coleções que só existem por causa de outra; não contam como "dado próprio" do aparelho. */
@@ -135,6 +136,7 @@ export function clearLocalData() {
     habits: [],
     workoutPlans: [],
     workoutSessions: [],
+    bodyWeights: [],
   });
 }
 

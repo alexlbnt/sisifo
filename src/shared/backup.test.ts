@@ -12,6 +12,7 @@ const rows = [
   { collection: 'settings', id: 'budgets', data: { food: 50000 } },
   // Lápide não entra.
   { collection: 'tasks', id: 'k1', data: null },
+  { collection: 'bodyWeights', id: '2026-10-20', data: { id: '2026-10-20', date: '2026-10-20', kg: 68.4, createdAt: '2026-10-20T10:00:00.000Z' } },
 ];
 
 describe('backup a partir dos registros do servidor', () => {
@@ -28,6 +29,7 @@ describe('backup a partir dos registros do servidor', () => {
     expect(backup.finance.budgets).toEqual({ food: 50000 });
     expect(backup.finance.transactions.map((t) => t.id)).toEqual(['t1']);
     expect(backup.personal.tasks).toEqual([]);
+    expect(backup.personal.bodyWeights?.map((w) => w.kg)).toEqual([68.4]);
   });
 });
 

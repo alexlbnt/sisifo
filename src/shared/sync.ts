@@ -6,6 +6,7 @@ import { z } from 'zod';
 import {
   accountSchema,
   areaSchema,
+  bodyWeightSchema,
   budgetsSchema,
   categorySchema,
   goalEntrySchema,
@@ -37,6 +38,7 @@ export const COLLECTION_SCHEMAS = {
   reviews: weeklyReviewSchema,
   workoutPlans: workoutPlanSchema,
   workoutSessions: workoutSessionSchema,
+  bodyWeights: bodyWeightSchema,
   /** Documentos únicos (ex.: id "budgets"). */
   settings: budgetsSchema,
 } as const;

@@ -21,6 +21,7 @@ export const PERSONAL_LISTS = [
   'reviews',
   'workoutPlans',
   'workoutSessions',
+  'bodyWeights',
 ] as const satisfies readonly (keyof PersonalState)[];
 
 type FinanceList = (typeof FINANCE_LISTS)[number];
@@ -126,6 +127,7 @@ export function rebuildRecords(records: Map<string, LocalRecord>): Rebuilt {
     habits: [],
     workoutPlans: [],
     workoutSessions: [],
+    bodyWeights: [],
   };
   const left = new Map<string, LocalRecord>();
   const goals: Array<Goal & { subtasks?: Subtask[] }> = [];

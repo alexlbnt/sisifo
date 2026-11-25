@@ -254,6 +254,20 @@ export interface WeeklyReview {
   createdAt: string;
 }
 
+/* ───────── Peso ───────── */
+
+/** Uma pesagem. Uma por dia: o id é a própria data, e registrar de novo no dia substitui. */
+export interface BodyWeight {
+  id: ISODate;
+  date: ISODate;
+  /** De 20 a 300, com até 1 casa decimal. */
+  kg: number;
+  note?: string;
+  createdAt: string;
+}
+
+export type BodyWeightInput = Pick<BodyWeight, 'date' | 'kg' | 'note'>;
+
 /* ───────── Estado ───────── */
 
 export interface PersonalState {
@@ -265,4 +279,5 @@ export interface PersonalState {
   habits: Habit[];
   workoutPlans: WorkoutPlan[];
   workoutSessions: WorkoutSession[];
+  bodyWeights: BodyWeight[];
 }

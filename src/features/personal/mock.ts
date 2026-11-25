@@ -298,5 +298,5 @@ export function createPersonalMock(): PersonalState {
     }
   }
 
-  return { areas: defaultAreas(), goals, goalEntries, reviews: [], tasks, habits, workoutPlans, workoutSessions };
+  return { areas: defaultAreas(), goals, goalEntries, reviews: [], tasks, habits, workoutPlans, workoutSessions, bodyWeights: [] };
 }

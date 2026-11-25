@@ -241,6 +241,17 @@ export const workoutSessionSchema = z.object({
   exercises: z.array(sessionExerciseSchema).max(60).optional(),
 });
 
+/** Pesagem: uma por dia, com o id igual à data. */
+export const bodyWeightSchema = z
+  .object({
+    id: isoDate,
+    date: isoDate,
+    kg: z.number().min(20).max(300),
+    note: text(200).optional(),
+    createdAt: timestamp,
+  })
+  .refine((w) => w.id === w.date, { message: 'o id da pesagem é a data', path: ['id'] });
+
 /* ───────── Registros da sincronização ─────────
  * Etapas de meta e marcações de hábito sobem como registros próprios. Assim,
  * marcar um dia no celular e outro no computador não faz uma marcação apagar a
