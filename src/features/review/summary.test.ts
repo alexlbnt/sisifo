@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Goal, Task, WorkoutSession } from '@/features/personal/types';
+import type { BodyWeight, Goal, Task, WorkoutSession } from '@/features/personal/types';
+import { addDaysISO } from '@/lib/dates';
 import { weekHighlights, weekSummary, type SummaryInput } from './summary';
 
 const MONDAY = '2026-10-19';
@@ -89,5 +90,44 @@ describe('destaques com muitos recordes', () => {
     ]);
     const lines = weekHighlights(weekSummary(MONDAY, TODAY, input({ sessions })), () => '');
     expect(lines).toContain('3 recordes: Supino reto (55 kg × 8), Remada (55 kg × 8), Agachamento (55 kg × 8).');
+  });
+});
+
+describe('peso na revisão', () => {
+  const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
+  /** Uma pesagem por dia, dos 28 dias antes do domingo até ele, com o peso pela função do dia. */
+  const weights = (kgOf: (i: number) => number) => {
+    const out: BodyWeight[] = [];
+    for (let i = 0; i <= 28; i++) out.push(w(addDaysISO(TODAY, i - 28), kgOf(i)));
+    return out;
+  };
+  const rising = weights((i) => 68 + (0.4 / 7) * i);
+  const weightGoal: Goal = { ...autoGoal, id: 'p', title: 'Chegar a 72 kg', start: 66, target: 72, source: { type: 'bodyweight' } };
+
+  it('variação da semana é a média do domingo menos a do domingo anterior', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising }));
+    expect(s.weight?.change).toBeCloseTo(0.4, 1);
+    expect(s.weight?.status).toBeNull();
+  });
+
+  it('destaque com meta traz o estado do ritmo', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising, goals: [weightGoal] }));
+    expect(weekHighlights(s, () => '')).toContain('Peso: +0,4 kg na semana, dentro da faixa.');
+  });
+
+  it('destaque parado conta as semanas', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: weights(() => 70), goals: [weightGoal] }));
+    expect(weekHighlights(s, () => '')).toContain('Peso parado há 4 semanas.');
+  });
+
+  it('sem meta, o destaque só traz a variação', () => {
+    const s = weekSummary(MONDAY, TODAY, input({ bodyWeights: rising }));
+    expect(weekHighlights(s, () => '')).toContain('Peso: +0,4 kg na semana.');
+  });
+
+  it('sem pesagens, weight é null e não há linha de peso', () => {
+    const s = weekSummary(MONDAY, TODAY, input());
+    expect(s.weight).toBeNull();
+    expect(weekHighlights(s, () => '').some((l) => l.startsWith('Peso'))).toBe(false);
   });
 });
