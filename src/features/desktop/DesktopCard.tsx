@@ -14,17 +14,17 @@ export function DesktopCard() {
     void native.getDesktopSettings().then(setSettings).catch(() => setError('Não deu para ler as configurações do desktop.'));
   }, []);
 
+  const IN_USE = 'Esse atalho já está em uso por outro programa.';
+
   const save = async (next: DesktopSettings) => {
-    const result = await native.setDesktopSettings(next);
-    if (result.ok) {
-      setSettings(next);
-      setError(null);
-    } else {
-      setError(
-        result.error === 'shortcut-in-use'
-          ? 'Esse atalho já está em uso por outro programa.'
-          : 'Esse atalho não é válido. Tente outra combinação.',
-      );
+    try {
+      const result = await native.setDesktopSettings(next);
+      if (result.ok) setError(null);
+      else setError(result.error === 'shortcut-in-use' ? IN_USE : 'Esse atalho não é válido. Tente outra combinação.');
+      // Relê o estado real (atalho ativo, início com o Windows mudado pela bandeja...).
+      setSettings(await native.getDesktopSettings());
+    } catch {
+      setError('Não deu para salvar as configurações do desktop.');
     }
   };
 
@@ -87,6 +87,11 @@ export function DesktopCard() {
           </label>
         </div>
       ) : null}
+      {settings && !settings.shortcutActive && !error && (
+        <p className="mt-3 text-sm text-expense">
+          {IN_USE} Escolha outro em "Trocar", ou feche o programa e clique em "Trocar" e aperte o mesmo atalho.
+        </p>
+      )}
       {error && <p className="mt-3 text-sm text-expense">{error}</p>}
     </Card>
   );

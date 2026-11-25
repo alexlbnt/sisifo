@@ -51,9 +51,10 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Fechar a janela principal só a esconde; "Sair" fica na bandeja.
+            // Fechar (X, Alt+F4) só esconde a janela principal e a barra de captura:
+            // sem elas, o app e o atalho parariam até reabrir. "Sair" fica na bandeja.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if window.label() == "main" {
+                if matches!(window.label(), "main" | "capture") {
                     api.prevent_close();
                     let _ = window.hide();
                 }

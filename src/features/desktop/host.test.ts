@@ -39,6 +39,16 @@ describe('host do desktop', () => {
     expect(reply).toEqual({ ok: true, message: `Despesa "${txs[0]!.title}" de ${formatBRL(850)} adicionada.` });
   });
 
+  it('o mesmo envio repetido (Enter duplo, nova tentativa) grava uma vez só', async () => {
+    const h = handlers();
+    const first = await h.handle({ type: 'capture.submit', text: 'café 8,50', submitId: 's1' });
+    const again = await h.handle({ type: 'capture.submit', text: 'café 8,50', submitId: 's1' });
+    expect(again).toEqual(first);
+    expect(useFinanceStore.getState().transactions).toHaveLength(1);
+    await h.handle({ type: 'capture.submit', text: 'café 8,50', submitId: 's2' });
+    expect(useFinanceStore.getState().transactions).toHaveLength(2);
+  });
+
   it('texto vazio não grava nada', async () => {
     for (const text of ['', '   ']) {
       expect(await handlers().handle({ type: 'capture.submit', text })).toEqual({ ok: false, message: 'Nada para registrar.' });

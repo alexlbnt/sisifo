@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CircleCheck, ListTodo, Wallet, Zap } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { relativeDay, todayISO } from '@/lib/dates';
+import { uid } from '@/lib/id';
 import { formatBRL } from '@/lib/money';
 import type { CaptureGuess } from '@/shared/capture';
 import type { TaskPriority } from '@/features/personal/types';
@@ -95,21 +96,31 @@ export function CaptureBar() {
     };
   }, [link, text, force]);
 
+  // Um envio por vez; o mesmo id em todas as tentativas (o host ignora repetições).
+  const sending = useRef(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!link) return waiting();
+    if (sending.current) return;
+    sending.current = true;
+    const submitId = uid();
     try {
-      const reply = await withRetry(() => link.client.request({ type: 'capture.submit', text, force }), waiting);
-      if (!reply.ok) return setStatus({ tone: 'bad', text: reply.message });
+      const reply = await withRetry(() => link.client.request({ type: 'capture.submit', text, force, submitId }), waiting);
+      if (!reply.ok) {
+        sending.current = false;
+        return setStatus({ tone: 'bad', text: reply.message });
+      }
       setStatus({ tone: 'good', text: reply.message });
       setTimeout(() => {
         setText('');
         setForce(undefined);
         setGuess(null);
         setStatus(null);
+        sending.current = false;
         void native.hideCapture();
       }, SAVED_MS);
     } catch {
+      sending.current = false;
       setStatus({ tone: 'bad', text: 'Não deu para falar com o Sísifo. Tente abrir a janela principal.' });
     }
   };

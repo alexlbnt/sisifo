@@ -14,26 +14,42 @@ import { tauriTransport } from './tauriTransport';
  * Roda no app e no painel (as duas entradas), com ou sem login: os dados são locais.
  */
 
+/** Quantos envios recentes o host lembra (para ignorar repetições). */
+const SUBMIT_MEMORY = 50;
+
 export function createHostHandlers(deps: { today?: () => ISODate } = {}) {
   const today = deps.today ?? todayISO;
+  const submitted = new Map<string, { ok: boolean; message: string }>();
 
   const handle = async (cmd: BridgeCommand): Promise<unknown> => {
     switch (cmd.type) {
       case 'capture.preview':
         return parseCapture(cmd.text, captureContext(today()), cmd.force);
       case 'capture.submit': {
-        const text = cmd.text.trim();
-        if (!text) return { ok: false, message: 'Nada para registrar.' };
-        const day = today();
-        const guess = parseCapture(text, captureContext(day), cmd.force);
-        if (!guess) return { ok: false, message: 'Nada para registrar.' };
-        if (cmd.force === 'transaction' && guess.kind === 'task') {
-          return { ok: false, message: `Inclua um valor na frase, ex.: "${text} 25,00".` };
+        // Enter duplo ou nova tentativa depois de um atraso: devolve a resposta já dada.
+        const done = cmd.submitId ? submitted.get(cmd.submitId) : undefined;
+        if (done) return done;
+        const reply = submit(cmd);
+        if (cmd.submitId) {
+          submitted.set(cmd.submitId, reply);
+          if (submitted.size > SUBMIT_MEMORY) submitted.delete(submitted.keys().next().value!);
         }
-        return { ok: true, message: applyCapture(guess, { today: day }) };
+        return reply;
       }
     }
   };
+
+  function submit(cmd: Extract<BridgeCommand, { type: 'capture.submit' }>): { ok: boolean; message: string } {
+    const text = cmd.text.trim();
+    if (!text) return { ok: false, message: 'Nada para registrar.' };
+    const day = today();
+    const guess = parseCapture(text, captureContext(day), cmd.force);
+    if (!guess) return { ok: false, message: 'Nada para registrar.' };
+    if (cmd.force === 'transaction' && guess.kind === 'task') {
+      return { ok: false, message: `Inclua um valor na frase, ex.: "${text} 25,00".` };
+    }
+    return { ok: true, message: applyCapture(guess, { today: day }) };
+  }
 
   const summary = (): BridgeSummary => {
     const day = today();

@@ -35,10 +35,11 @@ const ALTGR_ABNT2: Record<string, string | null> = {
   KeyE: '°',
   KeyR: '®',
   KeyC: '₢',
-  BracketLeft: 'ª',
-  BracketRight: 'º',
+  // Códigos físicos no ABNT2: BracketRight é a tecla "[{", Backslash é "]}", IntlRo é "/?".
+  BracketRight: 'ª',
+  Backslash: 'º',
+  IntlRo: '°',
   IntlBackslash: null,
-  Slash: '°',
 };
 
 export function isSafeShortcut(s: string): { ok: true } | { ok: false; reason: string } {
@@ -71,6 +72,8 @@ const NAMED: Record<string, string> = {
   Slash: ';',
   BracketLeft: '´',
   BracketRight: '[',
+  Backslash: ']',
+  IntlRo: '/',
   IntlBackslash: '\\',
 };
 

@@ -6,6 +6,8 @@
 export interface DesktopSettings {
   captureShortcut: string;
   autostart: boolean;
+  /** O atalho está registrado agora (falso se outro programa já o usava ao abrir). */
+  shortcutActive: boolean;
 }
 
 export type SetSettingsResult = { ok: true } | { ok: false; error: 'shortcut-in-use' | 'invalid' };

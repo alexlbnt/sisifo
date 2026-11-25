@@ -30,12 +30,18 @@ async fn tokio_sleep(d: Duration) {
 async fn check(app: &AppHandle, started_hidden: bool) -> Result<(), Box<dyn std::error::Error>> {
     let Some(update) = app.updater()?.check().await? else { return Ok(()) };
     let bytes = update.download(|_, _| {}, || {}).await?;
-    if started_hidden {
+    // Instalar fecha o app: só na hora se ninguém o está usando (aberto com o
+    // Windows e nenhuma janela à vista). Senão, espera o "Sair".
+    if started_hidden && !any_window_visible(app) {
         update.install(bytes)?;
     } else if let Some(pending) = app.try_state::<PendingUpdate>() {
         *pending.0.lock().unwrap() = Some((update, bytes));
     }
     Ok(())
+}
+
+fn any_window_visible(app: &AppHandle) -> bool {
+    app.webview_windows().values().any(|w| w.is_visible().unwrap_or(true))
 }
 
 /// "Sair" na bandeja: instala a versão baixada (o instalador fecha e reabre o app) ou só sai.

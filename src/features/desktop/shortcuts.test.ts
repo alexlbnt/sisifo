@@ -36,8 +36,17 @@ describe('isSafeShortcut', () => {
       ok: false,
       reason: 'No teclado ABNT2, Ctrl+Alt+Q digita "/". Escolha outra tecla ou inclua Shift.',
     });
-    for (const code of ['Digit0', 'Digit9', 'Equal', 'KeyW', 'KeyE', 'KeyR', 'KeyC', 'BracketLeft', 'BracketRight', 'IntlBackslash', 'Slash']) {
+    for (const code of ['Digit0', 'Digit9', 'Equal', 'KeyW', 'KeyE', 'KeyR', 'KeyC', 'BracketRight', 'Backslash', 'IntlRo', 'IntlBackslash']) {
       expect(isSafeShortcut(`Ctrl+Alt+${code}`).ok).toBe(false);
+    }
+    expect(isSafeShortcut('Ctrl+Alt+BracketRight')).toMatchObject({ reason: expect.stringContaining('"ª"') });
+    expect(isSafeShortcut('Ctrl+Alt+Backslash')).toMatchObject({ reason: expect.stringContaining('"º"') });
+    expect(isSafeShortcut('Ctrl+Alt+IntlRo')).toMatchObject({ reason: expect.stringContaining('"°"') });
+  });
+
+  it('teclas sem caractere no AltGr do ABNT2 valem com Ctrl+Alt', () => {
+    for (const code of ['BracketLeft', 'Slash', 'KeyK', 'ArrowRight']) {
+      expect(isSafeShortcut(`Ctrl+Alt+${code}`)).toEqual({ ok: true });
     }
   });
 

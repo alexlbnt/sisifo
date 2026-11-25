@@ -15,7 +15,8 @@ export interface Transport {
 
 export type BridgeCommand =
   | { type: 'capture.preview'; text: string; force?: CaptureGuess['kind'] }
-  | { type: 'capture.submit'; text: string; force?: CaptureGuess['kind'] };
+  /** `submitId`: o mesmo em todas as tentativas de um envio, para não gravar duas vezes. */
+  | { type: 'capture.submit'; text: string; force?: CaptureGuess['kind']; submitId?: string };
 
 export interface BridgeReplies {
   'capture.preview': CaptureGuess | null;
