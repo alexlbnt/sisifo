@@ -17,6 +17,7 @@ import { trainingStats, trainingWeek } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { WorkoutPlan, WorkoutSession } from '../types';
 import { scheduleLabel } from '../habits/scheduleLabel';
+import { WeightCard } from '../weight/WeightCard';
 import { PlanForm } from './PlanForm';
 import { ProgressCard } from './ProgressCard';
 import { useRunStore } from './runStore';
@@ -77,6 +78,8 @@ export function TrainingPage() {
       />
 
       <ActiveWorkoutBanner className="mb-4" />
+
+      <WeightCard className="mb-4" />
 
       <section
         aria-label="Resumo da semana"
