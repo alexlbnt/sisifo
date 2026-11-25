@@ -39,7 +39,8 @@ export function WeightChart({ weights, from, to, target, compact }: WeightChartP
   const values = data.flatMap((p) => [p.kg, p.avg]);
   let lo = Math.min(...values);
   let hi = Math.max(...values);
-  const showTarget = target !== undefined && target >= lo - 5 && target <= hi + 5;
+  // No minigráfico o alvo achataria a curva; ele já aparece no texto do card.
+  const showTarget = !compact && target !== undefined && target >= lo - 5 && target <= hi + 5;
   if (showTarget) {
     lo = Math.min(lo, target);
     hi = Math.max(hi, target);
