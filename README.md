@@ -259,7 +259,7 @@ Um executável para o computador, além do site e do PWA. Ele abre o **site publ
 - **Abrir painel:** a janela principal troca o app pelo Modo Painel; "Voltar ao app" nos ajustes do painel desfaz.
 - **Uma janela é a dona dos dados.** Só a janela principal (mesmo escondida) carrega as stores e sincroniza. A barra de captura é uma página leve (`desktop.html`) que manda o texto para ela pela ponte (`src/features/desktop/bridge.ts`). Assim nunca há duas cópias dos dados abertas.
 
-**Instalar:** baixe o `Sísifo_x.y.z_x64-setup.exe` em [Releases](https://github.com/alexlbnt/sisifo/releases). O instalador não pede administrador. O Windows pode avisar "editor desconhecido" (o executável não tem certificado): **Mais informações → Executar assim mesmo**. As versões novas são baixadas sozinhas e entram na próxima abertura.
+**Instalar:** baixe o `Sisifo_x.y.z_x64-setup.exe` em [Releases](https://github.com/alexlbnt/sisifo/releases). O instalador não pede administrador. O Windows pode avisar "editor desconhecido" (o executável não tem certificado): **Mais informações → Executar assim mesmo**. As versões novas são baixadas sozinhas e entram na próxima abertura.
 
 **Desenvolver:** precisa do Rust (rustup, toolchain MSVC) e do Visual Studio Build Tools com "Desenvolvimento para desktop com C++".
 

@@ -48,6 +48,6 @@ jobs:
           projectPath: desktop
           tagName: ${{ github.ref_name }}
           releaseName: 'Sísifo Desktop ${{ github.ref_name }}'
-          releaseBody: 'Instale com o Sísifo_*_x64-setup.exe abaixo. O Windows pode avisar "editor desconhecido": Mais informações → Executar assim mesmo.'
+          releaseBody: 'Instale com o Sisifo_*_x64-setup.exe abaixo. O Windows pode avisar "editor desconhecido": Mais informações → Executar assim mesmo.'
           releaseDraft: false
           includeUpdaterJson: true
