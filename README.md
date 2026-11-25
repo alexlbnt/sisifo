@@ -6,12 +6,13 @@ Painel pessoal para finanças, tarefas, metas, hábitos e treinos. É **local-fi
 
 - **Hoje:** tarefas do dia (com horário e prioridade), hábitos, treino, dinheiro (saldo disponível, quanto dá para gastar hoje e o que vence em 7 dias), metas e o foco da semana.
 - **Finanças:** lançamentos com contas, transferências e cartão de crédito (faturas, parcelas, limite); previsão do mês; orçamento por categoria; patrimônio líquido mês a mês.
-- **Metas:** por etapas, por número (livros, peso, km) ou em dinheiro (ligada a uma conta ou por aportes), com o ritmo necessário até o prazo. Metas numéricas podem se atualizar sozinhas: pelo recorde de um exercício, pelos treinos registrados ou pelas marcações de um hábito.
+- **Metas:** por etapas, por número (livros, peso, km) ou em dinheiro (ligada a uma conta ou por aportes), com o ritmo necessário até o prazo. Metas numéricas podem se atualizar sozinhas: pelo recorde de um exercício, pelos treinos registrados, pelas marcações de um hábito ou pelo peso corporal.
+- **Peso:** pesagens com a média de 7 dias, o ritmo em kg/semana e o gráfico na página Treino; com uma meta de peso, a faixa de ritmo e o aviso de platô (veja a seção Peso).
 - **Tarefas:** prioridade, horário, notas e repetição (todo dia, dias úteis, semanal, mensal, "toda primeira segunda"). Tarefa adiada 3 vezes ou mais pede uma decisão: fazer hoje, virar hábito ou apagar.
 - **Semana:** os 7 dias com compromissos do Google Calendar, treinos previstos e tarefas, com dias cheios em destaque; arraste as tarefas entre os dias (ou toque para mover, no celular).
 - **Hábitos:** feito/não feito ou por quantidade (ex.: 8 copos), em dias fixos ou X vezes por semana, com dia pulado justificado.
 - **Revisão semanal:** resumo da semana (com recordes e avanço das metas), destaques que viram rascunho do "o que deu certo", o que mudar e o foco da próxima.
-- **Captura rápida** (Ctrl+K, botão ⚡ no celular ou atalho do ícone): "café 8,50" vira despesa; "ligar pro banco amanhã às 14h !" vira tarefa.
+- **Captura rápida** (Ctrl+K, botão ⚡ no celular ou atalho do ícone): "café 8,50" vira despesa; "ligar pro banco amanhã às 14h !" vira tarefa; "peso 68,4" vira a pesagem do dia.
 - **Notificações push:** resumo da manhã, contas a vencer, hábitos pendentes à noite e lembrete da revisão.
 - **Feito para o polegar no celular:** botão + no centro da barra (gasto rápido com teclado de calculadora, captura por texto ou voz, nova tarefa), deslizar nas linhas (concluir ou adiar), puxar para atualizar e janelas que sobem de baixo.
 - **Atalhos do iPhone:** registrar e ver o resumo do dia sem abrir o app, com dois toques nas costas do celular, pela Siri ou por um widget de Atalhos.
@@ -109,7 +110,7 @@ Os dados ficam no **IndexedDB** (banco `sisifo`, tabela `kv`): sem o limite de ~
 
 | Onde | Chaves |
 |---|---|
-| IndexedDB | `sisifo:finance`, `sisifo:personal`, `sisifo:agenda`, `sisifo:sync` (cursor, shadow e fila do motor), `sisifo:sync-orphans` |
+| IndexedDB | `sisifo:finance`, `sisifo:personal` (inclui as pesagens, `bodyWeights`), `sisifo:agenda`, `sisifo:sync` (cursor, shadow e fila do motor), `sisifo:sync-orphans` |
 | localStorage | `sisifo:theme`, `sisifo:auth`, `sisifo:install-dismissed`, `sisifo:panel`, `sisifo:workout-run` e o marcador `sisifo:storage` |
 
 As do localStorage são pequenas, e o tema e o Modo Painel são lidos antes do React (no `index.html` e no `painel.html`).
@@ -123,6 +124,18 @@ As do localStorage são pequenas, e o tema e o Modo Painel são lidos antes do R
 
 1. Aparelhos com sincronização: voltar o deploy na Vercel é seguro. A versão antiga encontra o localStorage vazio, puxa tudo do servidor e substitui os dados do aparelho.
 2. Aparelhos só locais: antes de voltar o deploy, publique um hotfix com `FORCE_LOCAL = true` em `src/lib/storage.ts`. Ele copia o IndexedDB de volta para o localStorage (marcador `local`) e passa a usá-lo. Depois de abrir o app uma vez em cada aparelho, a versão antiga já encontra os dados. Ao voltar `FORCE_LOCAL` para `false`, a migração copia o localStorage (o mais novo) para o IndexedDB de novo.
+
+## Peso
+
+As pesagens ficam na store pessoal (`bodyWeights`), **uma por dia**: o id é a própria data, e registrar de novo no dia substitui. Sincronizam como coleção própria e entram no backup.
+
+- **Média de 7 dias:** o destaque é sempre a média das pesagens nos 7 dias de calendário até a data; num dia sem pesagem, vale a última média, levada adiante. O peso do dia varia demais para ser o número principal.
+- **Ritmo:** regressão linear das pesagens dos últimos 28 dias, em kg/semana (pelo menos 4 pesagens cobrindo 14 dias).
+- **Platô:** a média de hoje menos a de 14 dias atrás andou menos de 0,1 kg na direção da meta (com 4+ pesagens no período). As semanas parado contam recuando a janela uma semana por vez.
+- **Meta de peso:** fonte `bodyweight` em `GoalSource`, com faixa de ritmo opcional (`minPerWeek`, `maxPerWeek`; padrão 0,25–0,5 no ganho e 0,25–0,75 na perda). O card de peso usa a meta de peso criada por último. Estados, na ordem: alvo atingido, sem dados, recuando, parado, rápido demais, devagar, dentro da faixa.
+- **Onde aparece:** card Peso na página Treino, linha no card Treino do Hoje, card da meta, captura rápida (`peso 68,4`, também no desktop e em `POST /api/capture`) e revisão semanal.
+
+Código em `src/features/personal/weight/` (cálculos em `trend.ts`, `goal.ts` e `view.ts`, com testes). Design e plano em `docs/superpowers/specs/2026-11-25-peso-design.md` e `docs/superpowers/plans/2026-11-25-peso.md`.
 
 ## Visual: as ruínas
 
@@ -231,7 +244,7 @@ Código em `src/features/errors/`, `api/log.ts` e `server/errors.ts`. A tabela �
 
 Rotas com chave (`Authorization: Bearer sis_...`), porque o app Atalhos não manda o cookie de sessão:
 
-- `POST /api/capture`: registra um lançamento ou uma tarefa a partir de uma frase (corpo JSON `{ "text": "café 8,50" }` ou texto puro). Usa o mesmo parser da captura rápida (`src/shared/capture.ts`).
+- `POST /api/capture`: registra um lançamento, uma tarefa ou uma pesagem (`peso 68,4`) a partir de uma frase (corpo JSON `{ "text": "café 8,50" }` ou texto puro). Usa o mesmo parser da captura rápida (`src/shared/capture.ts`).
 - `GET /api/summary`: saldo disponível, quanto dá para gastar hoje, o que falta e o que vence.
 - Com `?format=text`, a resposta é texto puro, pronta para "Mostrar Notificação"; `?tz=` define o fuso (padrão: São Paulo).
 - Com `?format=widget`, um JSON enxuto para o widget (versão `v: 1`): tarefas e hábitos que faltam, até 3 tarefas e 3 hábitos, quanto dá para gastar hoje, o próximo compromisso e uma linha curta (`line`) para a tela de bloqueio e a Siri.
