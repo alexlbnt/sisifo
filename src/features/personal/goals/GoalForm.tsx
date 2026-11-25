@@ -3,11 +3,14 @@ import { CircleDollarSign, ListChecks, TrendingUp } from 'lucide-react';
 import { Button, Field, Input, Modal, SegmentedControl, Select, Textarea } from '@/components/ui';
 import { useAccounts } from '@/features/finance/accountHooks';
 import { ACCOUNT_KINDS } from '@/features/finance/accounts';
+import { todayISO } from '@/lib/dates';
 import { centsToInput } from '@/lib/money';
 import { HORIZONS, HORIZON_ORDER, WORKOUT_KINDS, defaultAreaFor, selectableAreas, useAreas } from '../meta';
 import { usePersonalStore } from '../store';
 import { useExerciseNames } from '../training/ExerciseListSheet';
 import type { Area, Goal, GoalHorizon, GoalInput, GoalKind, GoalMeasure, GoalSource, WorkoutKind } from '../types';
+import { DEFAULT_PACE } from '../weight/goal';
+import { trendAt } from '../weight/trend';
 import { parseGoalValue } from './goalFormat';
 import { sourceUnit } from './sources';
 
@@ -18,35 +21,52 @@ interface GoalFormProps {
   open: boolean;
   onClose: () => void;
   goal?: Goal | null;
+  /** Meta nova já com a fonte escolhida (ex.: "Definir alvo" no card de peso). */
+  preset?: 'bodyweight';
 }
 
 export function GoalForm(props: GoalFormProps) {
   if (!props.open) return null;
-  return <GoalFormInner key={props.goal?.id ?? 'new'} {...props} />;
+  return <GoalFormInner key={props.goal?.id ?? props.preset ?? 'new'} {...props} />;
 }
 
 const toInput = (goal: Goal | null | undefined, value: number | undefined) =>
   value === undefined ? '' : goal?.kind === 'savings' ? centsToInput(value) : String(value).replace('.', ',');
 
-function GoalFormInner({ onClose, goal }: GoalFormProps) {
+/** "0,25" a partir de 0.25. */
+const paceInput = (v: number | undefined) => (v === undefined ? '' : v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
+
+function GoalFormInner({ onClose, goal, preset }: GoalFormProps) {
   const id = useId();
   const addGoal = usePersonalStore((s) => s.addGoal);
   const updateGoal = usePersonalStore((s) => s.updateGoal);
   const accounts = useAccounts().filter((a) => a.kind !== 'credit' && (!a.archived || a.id === goal?.accountId));
 
+  const bodyWeights = usePersonalStore((s) => s.bodyWeights);
+  /** Média de 7 dias de hoje, como texto do campo ("68,4"); vazio sem pesagem. */
+  const currentWeight = () => {
+    const t = trendAt(bodyWeights, todayISO());
+    return t === null ? '' : (Math.round(t * 10) / 10).toLocaleString('pt-BR');
+  };
   const [title, setTitle] = useState(goal?.title ?? '');
   const [description, setDescription] = useState(goal?.description ?? '');
   const [horizon, setHorizon] = useState<GoalHorizon>(goal?.horizon ?? 'short');
   const areas = useAreas();
-  const [area, setArea] = useState<Area>(goal?.area ?? defaultAreaFor(areas));
+  const [area, setArea] = useState<Area>(
+    goal?.area ?? (preset === 'bodyweight' && areas.some((a) => a.id === 'training' && !a.archived) ? 'training' : defaultAreaFor(areas)),
+  );
   const [deadline, setDeadline] = useState(goal?.deadline ?? '');
-  const [kind, setKind] = useState<GoalKind>(goal?.kind ?? 'checklist');
+  const [kind, setKind] = useState<GoalKind>(goal?.kind ?? (preset ? 'numeric' : 'checklist'));
   const [target, setTarget] = useState(toInput(goal, goal?.target));
-  const [start, setStart] = useState(toInput(goal, goal?.start));
-  const [unit, setUnit] = useState(goal?.unit ?? '');
+  const [start, setStart] = useState(preset === 'bodyweight' && !goal ? currentWeight() : toInput(goal, goal?.start));
+  const [unit, setUnit] = useState(goal?.unit ?? (preset === 'bodyweight' ? 'kg' : ''));
   const [measure, setMeasure] = useState<GoalMeasure>(goal?.measure ?? 'sum');
   const [accountId, setAccountId] = useState(goal?.accountId ?? '');
-  const [sourceType, setSourceType] = useState<SourceType>(goal?.source?.type ?? 'manual');
+  const [sourceType, setSourceType] = useState<SourceType>(goal?.source?.type ?? preset ?? 'manual');
+  const weightSource = goal?.source?.type === 'bodyweight' ? goal.source : undefined;
+  // Faixa de ritmo (kg/semana). Vazia = o padrão da direção (ganho ou perda), que acompanha alvo e início.
+  const [minPace, setMinPace] = useState(paceInput(weightSource?.minPerWeek));
+  const [maxPace, setMaxPace] = useState(paceInput(weightSource?.maxPerWeek));
   const [exercise, setExercise] = useState(goal?.source?.type === 'exercise' ? goal.source.exercise : '');
   const [workoutKind, setWorkoutKind] = useState<WorkoutKind | ''>(goal?.source?.type === 'workouts' ? (goal.source.kind ?? '') : '');
   const habits = usePersonalStore((s) => s.habits);
@@ -55,6 +75,20 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
   const exerciseNames = useExerciseNames();
   const [steps, setSteps] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Direção pelo que está nos campos: alvo acima do início é ganho.
+  const targetNumber = Number(target.replace(',', '.'));
+  const startNumber = Number(start.replace(',', '.'));
+  const losing = target.trim() !== '' && start.trim() !== '' && targetNumber < startNumber;
+  const paceDefault = losing ? DEFAULT_PACE.lose : DEFAULT_PACE.gain;
+
+  const changeSource = (next: SourceType) => {
+    setSourceType(next);
+    if (next === 'bodyweight') {
+      if (!start.trim()) setStart(currentWeight());
+      if (!unit.trim()) setUnit('kg');
+    }
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -91,6 +125,14 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
         } else if (sourceType === 'habit') {
           if (!habitId) return setError('Escolha o hábito que conta para a meta.');
           source = { type: 'habit', habitId };
+        } else if (sourceType === 'bodyweight') {
+          const parsePace = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : undefined);
+          const min = parsePace(minPace);
+          const max = parsePace(maxPace);
+          const bad = (v: number | undefined) => v !== undefined && !(v >= 0 && v <= 5);
+          if (bad(min) || bad(max)) return setError('O ritmo vai de 0 a 5 kg por semana.');
+          if ((min ?? paceDefault.min) > (max ?? paceDefault.max)) return setError('O ritmo mínimo passa do máximo.');
+          source = { type: 'bodyweight', ...(min !== undefined && { minPerWeek: min }), ...(max !== undefined && { maxPerWeek: max }) };
         }
         input.source = source;
         input.unit = unit.trim() || (source ? sourceUnit(source, habits) : undefined);
@@ -164,7 +206,7 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
                   id={`${id}-unit`}
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
-                  placeholder={sourceType === 'exercise' ? 'kg' : sourceType === 'workouts' ? 'treinos' : sourceType === 'habit' ? 'dias' : 'livros'}
+                  placeholder={sourceType === 'exercise' || sourceType === 'bodyweight' ? 'kg' : sourceType === 'workouts' ? 'treinos' : sourceType === 'habit' ? 'dias' : 'livros'}
                   maxLength={20}
                 />
               </Field>
@@ -177,16 +219,19 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
                   ? 'Você registra cada avanço no cartão da meta.'
                   : sourceType === 'exercise'
                     ? 'A meta acompanha sozinha a maior carga registrada no modo treino.'
-                    : 'Conta sozinha a partir de hoje. Use "Começa em" para o que já foi feito antes.'
+                    : sourceType === 'bodyweight'
+                      ? 'A meta acompanha sozinha a média de 7 dias das pesagens. O alvo pode ser menor que o início.'
+                      : 'Conta sozinha a partir de hoje. Use "Começa em" para o que já foi feito antes.'
               }
             >
-              <Select id={`${id}-source`} value={sourceType} onChange={(e) => setSourceType(e.target.value as SourceType)}>
+              <Select id={`${id}-source`} value={sourceType} onChange={(e) => changeSource(e.target.value as SourceType)}>
                 <option value="manual">Eu registro</option>
                 <option value="exercise">Recorde de carga de um exercício</option>
                 <option value="workouts">Treinos registrados</option>
                 <option value="habit" disabled={!activeHabits.length}>
                   Marcações de um hábito
                 </option>
+                <option value="bodyweight">Peso corporal (média de 7 dias)</option>
               </Select>
             </Field>
             {sourceType === 'exercise' && (
@@ -210,6 +255,19 @@ function GoalFormInner({ onClose, goal }: GoalFormProps) {
                   ))}
                 </Select>
               </Field>
+            )}
+            {sourceType === 'bodyweight' && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Ritmo mínimo (kg/sem)" htmlFor={`${id}-pmin`}>
+                  <Input id={`${id}-pmin`} inputMode="decimal" value={minPace} onChange={(e) => setMinPace(e.target.value)} placeholder={paceInput(paceDefault.min)} />
+                </Field>
+                <Field label="Ritmo máximo (kg/sem)" htmlFor={`${id}-pmax`}>
+                  <Input id={`${id}-pmax`} inputMode="decimal" value={maxPace} onChange={(e) => setMaxPace(e.target.value)} placeholder={paceInput(paceDefault.max)} />
+                </Field>
+                <p className="col-span-2 -mt-1 text-[13px] text-ink-3">
+                  Em branco, vale {paceInput(paceDefault.min)} a {paceInput(paceDefault.max)} kg/sem {losing ? 'de perda' : 'de ganho'}.
+                </p>
+              </div>
             )}
             {sourceType === 'habit' && (
               <Field label="Hábito" htmlFor={`${id}-habit`} hint="Nos hábitos de quantidade, soma o que foi registrado em cada dia.">

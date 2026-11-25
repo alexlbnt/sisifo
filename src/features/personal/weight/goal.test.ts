@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addDaysISO } from '@/lib/dates';
 import type { BodyWeight, Goal } from '../types';
-import { activeWeightGoal, DEFAULT_PACE, PACE_LABELS, paceStatus } from './goal';
+import { activeWeightGoal, DEFAULT_PACE, PACE_LABELS, paceStatus, plateauMessage } from './goal';
 
 const TODAY = '2026-11-25';
 const w = (date: string, kg: number): BodyWeight => ({ id: date, date, kg, createdAt: `${date}T08:00:00.000Z` });
@@ -90,5 +90,15 @@ describe('activeWeightGoal', () => {
     const recent = goal({ id: 'new', createdAt: '2026-10-01T10:00:00.000Z' });
     expect(activeWeightGoal([old, books, recent])?.id).toBe('new');
     expect(activeWeightGoal([books])).toBeNull();
+  });
+});
+
+describe('plateauMessage', () => {
+  it('fala em aumentar as calorias no ganho e em reduzir na perda; nada fora do platô', () => {
+    const stalled = paceStatus(goal(), series(21, () => 70), TODAY);
+    expect(plateauMessage(stalled)).toBe('Peso parado há 3 semanas. Para seguir ganhando, aumente as calorias.');
+    const losing = paceStatus(goal({ start: 80, target: 75 }), series(21, () => 78), TODAY);
+    expect(plateauMessage(losing)).toBe('Peso parado há 3 semanas. Para seguir perdendo, reduza as calorias.');
+    expect(plateauMessage(paceStatus(goal(), series(21, perWeek(68, 0.3)), TODAY))).toBeNull();
   });
 });

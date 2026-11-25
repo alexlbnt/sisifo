@@ -1,32 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Pencil, Plus, Scale, Trash2, TriangleAlert } from 'lucide-react';
-import { Badge, Button, Card, ConfirmDialog, EmptyState, IconButton, SegmentedControl, type BadgeTone } from '@/components/ui';
+import { Badge, Button, Card, ConfirmDialog, EmptyState, IconButton, SegmentedControl } from '@/components/ui';
 import { fmt, relativeDay, todayISO } from '@/lib/dates';
 import { usePersonalStore } from '../store';
 import type { BodyWeight } from '../types';
 import { formatDelta, formatKg, formatRate } from './format';
-import { activeWeightGoal, PACE_LABELS, paceStatus, type PaceState, type WeightStatus } from './goal';
+import { activeWeightGoal, PACE_LABELS, PACE_TONES, paceStatus, plateauMessage } from './goal';
 import { trendAt, weeklyRate } from './trend';
 import { latestWeight, PERIOD_LABELS, periodChange, periodStart, type WeightPeriod } from './view';
 import { WeightChart } from './WeightChart';
 import { WeightSheet } from './WeightSheet';
-
-export const PACE_TONES: Record<PaceState, BadgeTone> = {
-  reached: 'good',
-  noData: 'neutral',
-  reversing: 'danger',
-  stalled: 'danger',
-  tooFast: 'warn',
-  slow: 'warn',
-  onPace: 'good',
-};
-
-/** "Peso parado há 3 semanas. Para seguir ganhando, aumente as calorias." */
-export function plateauMessage(status: WeightStatus): string | null {
-  if (status.state !== 'stalled') return null;
-  const tail = status.direction === 1 ? 'Para seguir ganhando, aumente as calorias.' : 'Para seguir perdendo, reduza as calorias.';
-  return `Peso parado há ${status.stalledWeeks} semanas. ${tail}`;
-}
 
 const PERIODS: WeightPeriod[] = ['1m', '3m', '6m', 'all'];
 const HISTORY = 5;

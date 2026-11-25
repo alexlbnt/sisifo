@@ -17,6 +17,7 @@ import { trainingStats, trainingWeek } from '../selectors';
 import { usePersonalStore } from '../store';
 import type { WorkoutPlan, WorkoutSession } from '../types';
 import { scheduleLabel } from '../habits/scheduleLabel';
+import { GoalForm } from '../goals/GoalForm';
 import { WeightCard } from '../weight/WeightCard';
 import { PlanForm } from './PlanForm';
 import { ProgressCard } from './ProgressCard';
@@ -42,6 +43,7 @@ export function TrainingPage() {
   const startFromPlan = useRunStore((s) => s.startFromPlan);
   const { begin, dialog: startDialog } = useStartWorkout();
   const [choosing, setChoosing] = useState(false);
+  const [weightGoalForm, setWeightGoalForm] = useState(false);
 
   const today = todayISO();
   const [weekOf, setWeekOf] = useState(today);
@@ -79,7 +81,8 @@ export function TrainingPage() {
 
       <ActiveWorkoutBanner className="mb-4" />
 
-      <WeightCard className="mb-4" />
+      <WeightCard className="mb-4" onDefineTarget={() => setWeightGoalForm(true)} />
+      <GoalForm open={weightGoalForm} preset="bodyweight" onClose={() => setWeightGoalForm(false)} />
 
       <section
         aria-label="Resumo da semana"

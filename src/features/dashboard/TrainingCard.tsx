@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { Check, Dumbbell } from 'lucide-react';
+import { Check, Dumbbell, Scale } from 'lucide-react';
 import { Button, Card, Heatmap } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { addDaysISO, fmt, type ISODate } from '@/lib/dates';
@@ -10,6 +10,9 @@ import { useRunStore } from '@/features/personal/training/runStore';
 import { SessionForm } from '@/features/personal/training/SessionForm';
 import { ActiveWorkoutBanner, useStartWorkout } from '@/features/personal/training/StartWorkout';
 import type { WorkoutPlan } from '@/features/personal/types';
+import { formatKg, formatRate } from '@/features/personal/weight/format';
+import { trendAt, weeklyRate } from '@/features/personal/weight/trend';
+import { WeightSheet } from '@/features/personal/weight/WeightSheet';
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -102,6 +105,8 @@ export function TrainingCard({ today, className }: { today: ISODate; className?:
         </ul>
       )}
 
+      <WeightLine today={today} />
+
       <section aria-label="Dias treinados" className="mt-1 border-t border-line px-5 pt-3 pb-5">
         <h3 className="mb-2.5 text-sm font-medium text-ink-2">Dias treinados</h3>
         <Heatmap
@@ -124,5 +129,34 @@ export function TrainingCard({ today, className }: { today: ISODate; className?:
       <SessionForm open={Boolean(sessionPlan)} plan={sessionPlan} date={today} onClose={() => setSessionPlan(null)} />
       {dialog}
     </Card>
+  );
+}
+
+/** "Peso 68,4 kg · +0,3 kg/sem", com o registro a um toque; em destaque se ainda não pesou hoje. */
+function WeightLine({ today }: { today: ISODate }) {
+  const weights = usePersonalStore((s) => s.bodyWeights);
+  const [open, setOpen] = useState(false);
+  const trend = useMemo(() => trendAt(weights, today), [weights, today]);
+  const rate = useMemo(() => weeklyRate(weights, today), [weights, today]);
+  const weighedToday = weights.some((w) => w.date === today);
+
+  return (
+    <div className="mt-1 flex items-center gap-3 border-t border-line px-5 py-2.5">
+      <Scale className="size-4 shrink-0 text-ink-3" aria-hidden />
+      <p className="min-w-0 flex-1 truncate text-sm">
+        {trend === null ? (
+          <span className="text-ink-2">Sem pesagens ainda</span>
+        ) : (
+          <>
+            Peso <b className="font-semibold tabular">{formatKg(Math.round(trend * 10) / 10)}</b>
+            {rate !== null && <span className="text-ink-3 tabular"> · {formatRate(rate)}</span>}
+          </>
+        )}
+      </p>
+      <Button size="sm" variant={weighedToday ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>
+        {weighedToday ? 'Corrigir' : 'Registrar peso'}
+      </Button>
+      <WeightSheet open={open} weight={weighedToday ? weights.find((w) => w.date === today) : undefined} onClose={() => setOpen(false)} />
+    </div>
   );
 }

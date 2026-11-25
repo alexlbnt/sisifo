@@ -1,3 +1,4 @@
+import type { BadgeTone } from '@/components/ui';
 import type { ISODate } from '@/lib/dates';
 import type { BodyWeight, Goal } from '../types';
 import { change14, plateauWeeks, trendAt, weeklyRate } from './trend';
@@ -20,6 +21,24 @@ export const PACE_LABELS: Record<PaceState, string> = {
   slow: 'Devagar',
   onPace: 'Dentro da faixa',
 };
+
+/** Cor do selo de cada estado. */
+export const PACE_TONES: Record<PaceState, BadgeTone> = {
+  reached: 'good',
+  noData: 'neutral',
+  reversing: 'danger',
+  stalled: 'danger',
+  tooFast: 'warn',
+  slow: 'warn',
+  onPace: 'good',
+};
+
+/** "Peso parado há 3 semanas. Para seguir ganhando, aumente as calorias."; null fora do platô. */
+export function plateauMessage(status: WeightStatus): string | null {
+  if (status.state !== 'stalled') return null;
+  const tail = status.direction === 1 ? 'Para seguir ganhando, aumente as calorias.' : 'Para seguir perdendo, reduza as calorias.';
+  return `Peso parado há ${status.stalledWeeks} semanas. ${tail}`;
+}
 
 export interface WeightStatus {
   state: PaceState;
