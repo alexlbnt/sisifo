@@ -92,6 +92,8 @@ export default defineConfig({
       },
     },
   ],
+  // A casca do executável (desktop/) é compilada pelo Rust: o Vite não vigia os arquivos dela.
+  server: { watch: { ignored: ['**/desktop/**'] } },
   build: {
     rollupOptions: {
       // Modo Painel: entrada própria, com manifest em tela cheia e orientação livre (public/painel.webmanifest).
